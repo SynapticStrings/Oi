@@ -2,6 +2,28 @@
 
 Oi means Orchid integration, it provides simple API to cover heavy Orchid Step code.
 
+## Example
+
+Demo.
+
+```elixir
+defmodule FooStep do
+  use Oi.StepBuilder
+
+  # meinfest()
+
+  routine name, _ do
+    IO.puts "Hello #{name}!"
+
+    ok(nil)
+  end
+end
+
+orchid_recipe = Oi.build([FooStep])
+inputs = "Foo"
+
+```
+
 ## Roadmap
 
 * [ ] [Quincunx](https://github.com/SynapticStrings/Quincunx)-like arch
