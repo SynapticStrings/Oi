@@ -22,8 +22,10 @@ defmodule Oi.MixProject do
   defp elixirc_paths(_), do: ["lib"]
 
   def application do
+    observer = if Mix.env() == :dev, do: [:observer, :wx], else: []
+
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger] ++ observer,
       mod: {Oi.Application, []}
     ]
   end
