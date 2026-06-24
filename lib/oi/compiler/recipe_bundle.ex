@@ -20,7 +20,7 @@ defmodule Oi.Compiler.RecipeBundle do
         }
 
   @type interventions_map :: %{
-          Graph.PortRef.t() => OrchidIntervention.intervention_spec()
+          Graph.PortRef.t() => {intervention_type :: atom(), payload :: term()}
         }
 
   defstruct [

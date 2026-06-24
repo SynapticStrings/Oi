@@ -1,20 +1,23 @@
 defmodule Oi.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+
   def project do
     [
       app: :oi,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
+      package: package(),
+      description: "Lightweight Orchid integration layer with pluggable execution strategies",
       test_coverage: [
         ignore_modules: [
-          ~r/.*Test.*/,
-          # For other module, while complete.
-          ]
+          ~r/.*Test.*/
         ]
+      ]
     ]
   end
 
@@ -33,8 +36,17 @@ defmodule Oi.MixProject do
   defp deps do
     [
       {:orchid, "~> 0.6"},
-      {:orchid_symbiont, "~> 0.2"},
-      {:orchid_intervention, "~> 0.1"}
+      {:orchid_symbiont, "~> 0.2"}
+    ]
+  end
+
+  defp package do
+    [
+      maintainers: ["awachestnut"],
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/SynapticStrings/Oi"},
+      source_ref: @version,
+      files: ~w(lib .formatter.exs mix.exs README.md)
     ]
   end
 end
