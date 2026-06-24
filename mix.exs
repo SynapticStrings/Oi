@@ -23,7 +23,8 @@ defmodule Oi.MixProject do
   defp deps do
     [
       {:orchid, "~> 0.6"},
-      {:orchid_symbiont, "~> 0.2"}
+      {:orchid_symbiont, "~> 0.2"},
+      {:orchid_intervention, "~> 0.1"}
     ]
   end
 end
