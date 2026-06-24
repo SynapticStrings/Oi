@@ -2,7 +2,7 @@ defmodule Oi.Compiler.RecipeBundle do
   @moduledoc """
   Container for a compiled Orchid recipe and its associated metadata.
 
-  A RecipeBundle is the static output of `Oi.Compiler.compile/3` — it pairs
+  A RecipeBundle is the static output of `Oi.Compiler.compile_graph/2` — it pairs
   an `Orchid.Recipe` with the boundary information (requires/exports) and
   the interventions bound to the nodes within this cluster.
   """
