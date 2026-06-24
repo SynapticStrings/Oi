@@ -73,6 +73,7 @@ defmodule Oi do
         {:error, :not_compiled}
 
       %Planning.Plan{} ->
+        _inputs = Keyword.get(opts, :inputs)
         interventions = Keyword.get(opts, :interventions, ws.interventions)
         bound_bundles = Compiler.bind(ws.static_bundles, interventions)
 

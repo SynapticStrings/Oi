@@ -100,7 +100,7 @@ end
 ## Roadmap
 
 - [x] Scaffold
-- [ ] 
+- [ ] Exclipit inputs
 
 ## License
 
