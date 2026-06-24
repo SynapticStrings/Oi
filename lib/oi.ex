@@ -18,17 +18,17 @@ defmodule Oi do
   alias Oi.Workspace.{Planning, Drafting}
 
   @doc """
-  Compile a workspace's graph into a plan.
+  Phase 1: Compile graph into static bundles + plan.
 
-  Pure function: fills `workspace.plan` with a `Planning.Plan`.
-  Does not touch `drafting`.
+  Pure topology — no interventions. Result stored in `workspace.static_bundles`
+  and `workspace.plan`. Reusable across different intervention sets.
   """
   @spec compile(Workspace.t()) :: {:ok, Workspace.t()} | {:error, :cycle_detected}
   def compile(%Workspace{} = ws) do
-    case Compiler.compile(ws.graph, ws.cluster, ws.interventions) do
+    case Compiler.compile_graph(ws.graph, ws.cluster) do
       {:ok, bundles} ->
         {:ok, plan} = Planning.build(bundles)
-        {:ok, %{ws | plan: plan}}
+        {:ok, %{ws | static_bundles: bundles, plan: plan}}
 
       {:error, _} = err ->
         err
@@ -36,12 +36,14 @@ defmodule Oi do
   end
 
   @doc """
-  Execute a workspace's plan, filling `drafting` with results.
+  Phase 2: Dispatch plan with interventions, filling `drafting`.
+
+  Interventions can be overridden via the `:interventions` option —
+  useful for A/B testing with the same compiled plan.
 
   ## Options
 
-  See `Oi.Configurator.new/1`. Key options:
-
+    * `:interventions` — overrides `workspace.interventions` (default)
     * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or `Oi.Executor.Pool`
     * `:executor_opts` — passed to the executor (e.g. `[sup: MyTaskSup]`)
     * `:plugins` — OrchidPlugin pipeline
@@ -49,9 +51,14 @@ defmodule Oi do
 
   ## Examples
 
-      # Pure function (sync, no processes)
+      # Compile once
       {:ok, ws} = Oi.compile(ws)
+
+      # Dispatch with default interventions
       {:ok, ws} = Oi.dispatch(ws)
+
+      # Dispatch with swapped interventions (reuses compiled plan)
+      {:ok, ws_b} = Oi.dispatch(ws, interventions: other_interventions)
 
       # With Task.Supervisor
       {:ok, ws} = Oi.dispatch(ws,
@@ -65,11 +72,17 @@ defmodule Oi do
       nil ->
         {:error, :not_compiled}
 
-      %Planning.Plan{} = plan ->
+      %Planning.Plan{} ->
+        interventions = Keyword.get(opts, :interventions, ws.interventions)
+        bound_bundles = Compiler.bind(ws.static_bundles, interventions)
+
+        # Rebuild plan with bound bundles
+        {:ok, bound_plan} = Planning.build(bound_bundles)
+
         conf = Configurator.new(opts)
         drafting = Drafting.new()
 
-        case Dispatcher.dispatch(plan, drafting, conf) do
+        case Dispatcher.dispatch(bound_plan, drafting, conf) do
           {:ok, final_drafting} ->
             {:ok, %{ws | drafting: final_drafting}}
 

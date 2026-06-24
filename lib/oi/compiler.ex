@@ -2,46 +2,53 @@ defmodule Oi.Compiler do
   @moduledoc """
   Compiles a pure structural graph into Orchid RecipeBundles.
 
-  Given a resolved graph (already projected by the upstream editor),
-  a cluster declaration, and an interventions map, produces a list of
-  `RecipeBundle` structs ready for planning.
+  Two-phase compilation:
 
-  ## Pipeline
+  1. `compile_graph/2` — pure topology: topological sort + cluster paint
+     + recipe construction. Produces *static* bundles without interventions.
+     Result is reusable across different intervention sets.
 
-      Graph + Cluster + Interventions
-        → topological_sort
-        → cluster paint (group nodes by cluster)
-        → build RecipeBundle per cluster (steps + boundaries)
-        → bind interventions
+  2. `bind/2` — attaches interventions to static bundles, filtered by node
+     membership. Cheap; can be called repeatedly with different interventions.
   """
 
   alias Oi.Topology.{Graph, Cluster}
   alias Oi.Topology.Graph.PortRef
   alias Oi.Compiler.RecipeBundle
 
-  @doc "Compile a graph into recipe bundles with interventions bound."
-  @spec compile(
-          Graph.t(Orchid.Step.implementation()),
-          Cluster.t(),
-          RecipeBundle.interventions_map()
-        ) ::
+  @doc """
+  Phase 1: Compile graph + cluster into static RecipeBundles (no interventions).
+
+  Reusable across different intervention sets.
+  """
+  @spec compile_graph(Graph.t(Orchid.Step.implementation()), Cluster.t()) ::
           {:error, :cycle_detected} | {:ok, [RecipeBundle.t()]}
-  def compile(graph, cluster_decl \\ %Cluster{}, interventions \\ %{}) do
+  def compile_graph(graph, cluster_decl \\ %Cluster{}) do
     with {:ok, sorted_node_ids} <- Graph.topological_sort(graph) do
       node_colors = Cluster.paint_graph(sorted_node_ids, graph.edges, cluster_decl)
 
-      static_bundles =
+      bundles =
         sorted_node_ids
         |> Enum.group_by(&Map.get(node_colors, &1, :default_cluster))
         |> Enum.map(fn {_cluster_name, node_ids} ->
           build_bundle(node_ids, graph)
         end)
 
-      bundles = RecipeBundle.bind_interventions(static_bundles, interventions)
-
       {:ok, bundles}
     end
   end
+
+  @doc """
+  Phase 2: Bind interventions to static bundles.
+
+  Thin wrapper around `RecipeBundle.bind_interventions/2`.
+  """
+  @spec bind([RecipeBundle.t()], RecipeBundle.interventions_map()) :: [RecipeBundle.t()]
+  def bind(static_bundles, interventions) do
+    RecipeBundle.bind_interventions(static_bundles, interventions)
+  end
+
+  # --- Phase 1 internals ---
 
   defp build_bundle(node_ids, graph) do
     steps =

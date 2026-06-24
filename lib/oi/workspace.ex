@@ -8,11 +8,13 @@ defmodule Oi.Workspace do
 
   ## Lifecycle
 
-      workspace = Oi.Workspace.new("svs-1", graph, cluster, interventions)
+      # Phase 1: static compile (topology only, reusable)
+      workspace = Oi.Workspace.new("svs-1", graph, cluster)
       {:ok, workspace} = Oi.compile(workspace)
-      {:ok, workspace} = Oi.dispatch(workspace, executor: Oi.Executor.Sync)
-      results = workspace.drafting
 
+      # Phase 2: dispatch with interventions (can swap interventions)
+      {:ok, ws_a} = Oi.dispatch(workspace, interventions: interventions_a)
+      {:ok, ws_b} = Oi.dispatch(workspace, interventions: interventions_b)
   """
 
   alias Oi.Topology.{Graph, Cluster}
@@ -26,6 +28,7 @@ defmodule Oi.Workspace do
           graph: Graph.t(Orchid.Step.implementation()),
           cluster: Cluster.t(),
           interventions: RecipeBundle.interventions_map(),
+          static_bundles: [RecipeBundle.t()] | nil,
           plan: Planning.Plan.t() | nil,
           drafting: Drafting.t() | nil
         }
@@ -33,18 +36,14 @@ defmodule Oi.Workspace do
   defstruct [
     :id,
     :graph,
-    :cluster,
-    :interventions,
-    :plan,
-    :drafting
+    cluster: %Cluster{},
+    interventions: %{},
+    static_bundles: nil,
+    plan: nil,
+    drafting: nil
   ]
 
-  @spec new(
-          id(),
-          Graph.t(Orchid.Step.implementation()),
-          Cluster.t(),
-          RecipeBundle.interventions_map()
-        ) :: t()
+  @spec new(id(), Graph.t(Orchid.Step.implementation()), Cluster.t(), RecipeBundle.interventions_map()) :: t()
   def new(id, graph, cluster \\ %Cluster{}, interventions \\ %{}) do
     %__MODULE__{
       id: id,
