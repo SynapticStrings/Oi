@@ -1,4 +1,8 @@
 defmodule Oi.Session do
+  @moduledoc """
+  Session seperates whole application into seperal spaces where contains different
+  steps, independent [symbionts](https://orchid-symbiont.hexdocs.pm/) and storages.
+  """
   import Oi.Registry
 
   @spec start(Oi.name(), keyword()) :: :ignore | {:error, any()} | {:ok, pid()} | {:ok, pid(), any()}
@@ -33,11 +37,16 @@ defmodule Oi.Session do
     end
   end
 
+  @spec instances(Oi.name()) :: Oi.Registry.key()
   def instances(oi), do: key(oi, :instances)
+  @spec instances_tuple(Oi.name()) :: Oi.Registry.via_tuple()
   def instances_tuple(oi), do: via(oi, :instances)
 
+  @spec server(Oi.name()) :: Oi.Registry.key()
   def server(oi), do: key(oi, :server)
+  @spec server_tuple(Oi.name()) :: Oi.Registry.via_tuple()
   def server_tuple(oi), do: via(oi, :server)
 
+  @spec tasks_tuple(Oi.name()) :: Oi.Registry.via_tuple()
   def tasks_tuple(oi), do: via(oi, :task_sup)
 end

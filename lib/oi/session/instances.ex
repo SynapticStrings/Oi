@@ -1,4 +1,5 @@
 defmodule Oi.Session.Instances do
+  @moduledoc "Instance Supervisor."
   use Supervisor
 
   @impl true

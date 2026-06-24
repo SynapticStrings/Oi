@@ -4,6 +4,7 @@ defmodule Oi.Registry do
 
   @type role :: nil | atom()
   @type key :: Oi.name() | {Oi.name(), role()}
+  @type via_tuple :: {:via, Registry, {__MODULE__, key()}}
 
   def child_spec(_init_arg) do
     [keys: :unique, name: __MODULE__]
@@ -12,7 +13,7 @@ defmodule Oi.Registry do
   end
 
   @doc "Build a via tuple."
-  @spec via(Oi.name(), role()) :: {:via, Registry, {__MODULE__, key()}}
+  @spec via(Oi.name(), role()) :: via_tuple()
   def via(oi_name, role \\ nil), do: {:via, Registry, {__MODULE__, key(oi_name, role)}}
 
   @spec key(Oi.name(), role()) :: key()
