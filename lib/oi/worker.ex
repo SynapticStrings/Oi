@@ -19,6 +19,8 @@ defmodule Oi.Worker do
     intervention_by_orchid_key =
       Map.new(bundle.interventions, fn {k, v} -> {PortRef.to_orchid_key(k), v} end)
 
+    IO.puts("#{inspect(intervention_by_orchid_key |> Enum.map(fn {k, _} -> k end))}  #{inspect(bundle.inputs)}")
+
     dynamic_inputs = resolve_dependencies(bundle, drafting, intervention_by_orchid_key)
 
     baggage =

@@ -57,11 +57,13 @@ defmodule Oi.Compiler do
       |> Enum.map(&node_to_step(&1, graph))
 
     {requires, exports} = calculate_boundaries(node_ids, graph)
+    inputs = (requires -- exports)
 
     %RecipeBundle{
       recipe: Orchid.Recipe.new(steps),
       requires: requires,
       exports: exports,
+      inputs: inputs,
       node_ids: node_ids
     }
   end

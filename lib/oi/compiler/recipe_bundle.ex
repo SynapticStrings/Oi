@@ -15,6 +15,7 @@ defmodule Oi.Compiler.RecipeBundle do
           recipe: Orchid.Recipe.t(),
           requires: [Orchid.Step.io_key()],
           exports: [Orchid.Step.io_key()],
+          inputs: [Orchid.Step.io_key()],
           node_ids: [Graph.Node.id()],
           interventions: interventions_map()
         }
@@ -27,6 +28,7 @@ defmodule Oi.Compiler.RecipeBundle do
     :recipe,
     requires: [],
     exports: [],
+    inputs: [],
     node_ids: [],
     interventions: %{}
   ]
