@@ -97,6 +97,11 @@ end
 
 <!-- MDOC -->
 
+## Roadmap
+
+- [x] Scaffold
+- [ ] 
+
 ## License
 
 MIT

@@ -26,6 +26,11 @@ defmodule Oi.Workspace.Drafting do
   @spec fetch(t(), io_key()) :: {:ok, Orchid.Param.t()} | :error
   def fetch(%__MODULE__{memory: mem}, key), do: Map.fetch(mem, key)
 
+  @spec take(t(), [io_key()]) :: %{io_key() => Orchid.Param.t()}
+  def take(%__MODULE__{memory: mem}, keys) do
+    for k <- keys, Map.has_key?(mem, k), into: %{}, do: {k, Map.fetch!(mem, k)}
+  end
+
   @doc """
   按 keys 投影出一个 param_map。区分『缺失』和『值为 nil』：
   缺失返回 error，nil 是合法值照常返回。

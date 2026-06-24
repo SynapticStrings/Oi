@@ -11,8 +11,10 @@ defmodule Oi.Worker do
   alias Oi.Workspace.Drafting
   alias Oi.Configurator
 
+  @type delta :: %{Drafting.io_key() => Orchid.Param.t()}
+
   @spec run(RecipeBundle.t(), Drafting.t(), Configurator.t()) ::
-          {:ok, map()} | {:error, term()}
+          {:ok, delta()} | {:error, term()}
   def run(%RecipeBundle{} = bundle, %Drafting{} = drafting, %Configurator{} = conf) do
     intervention_by_orchid_key =
       Map.new(bundle.interventions, fn {k, v} -> {PortRef.to_orchid_key(k), v} end)

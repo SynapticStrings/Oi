@@ -20,7 +20,13 @@ defmodule Oi.Configurator do
   @type t :: %__MODULE__{
           executor: module(),
           executor_opts: keyword(),
-          plugins: [{module(), context :: any()}],
+          plugins: [
+            {module(), context :: any()}
+            | module()
+            | {({Orchid.Recipe.t(), keyword(), context :: any()} ->
+                  {Orchid.Recipe.t(), keyword()})}
+            | ({Orchid.Recipe.t(), keyword()} -> {Orchid.Recipe.t(), keyword()})
+          ],
           orchid_baggage: map(),
           orchid_opts: keyword(),
           concurrency: pos_integer(),
@@ -41,6 +47,7 @@ defmodule Oi.Configurator do
     executor_opts = Keyword.get(opts, :executor_opts, [])
 
     concurrency = Keyword.get(opts, :concurrency, System.schedulers_online())
+
     executor_opts =
       Keyword.put_new(executor_opts, :concurrency, concurrency)
 
@@ -71,6 +78,12 @@ defmodule Oi.Configurator do
 
         plugin_module when is_atom(plugin_module) ->
           plugin_module.apply_plugin(acc, nil)
+
+        {plugin_func, context} when is_function(plugin_func, 2) ->
+          plugin_func.(acc, context)
+
+        plugin_func when is_function(plugin_func, 1) ->
+          plugin_func.(acc)
       end
     end)
   end
