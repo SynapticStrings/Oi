@@ -47,9 +47,14 @@ defmodule Oi.Worker do
 
   defp resolve_from_intervention(orchid_key, interventions) do
     case Map.get(interventions, orchid_key) do
-      %{input: %Orchid.Param{} = param} -> %{param | name: orchid_key}
-      %{input: raw} when not is_nil(raw) -> Orchid.Param.new(orchid_key, :any, raw)
-      _ -> Orchid.Param.new(orchid_key, :void, nil)
+      {:input, %Orchid.Param{} = param} ->
+        %{param | name: orchid_key}
+
+      {:input, payload} when not is_nil(payload) ->
+        Orchid.Param.new(orchid_key, :any, payload)
+
+      _ ->
+        Orchid.Param.new(orchid_key, :void, nil)
     end
   end
 end

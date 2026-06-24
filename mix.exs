@@ -7,11 +7,20 @@ defmodule Oi.MixProject do
       version: "0.1.0",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      elixirc_paths: elixirc_paths(Mix.env()),
+      deps: deps(),
+      test_coverage: [
+        ignore_modules: [
+          ~r/.*Test.*/,
+          # For other module, while complete.
+          ]
+        ]
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   def application do
     [
       extra_applications: [:logger],
@@ -19,7 +28,6 @@ defmodule Oi.MixProject do
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:orchid, "~> 0.6"},
