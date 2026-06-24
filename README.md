@@ -16,7 +16,7 @@ Oi means Orchid integration — lightweight glue layer between
   2. `Oi.dispatch/2` — bind interventions → plan → execute via pluggable executor
 
 - **Executor** — pluggable task execution strategy.
-  Built-in: `Sync` (serial), `TaskSup` (Task.Supervisor), `Pool` (NimblePool).
+  Built-in: `Sync` (serial), `TaskSup` (Task.Supervisor), `Pool` (NimblePool)(in future).
 
 - **Session** — optional process tree per tenant, wrapping `OrchidSymbiont.Runtime`
   for multi-tenant isolation.
