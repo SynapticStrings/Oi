@@ -1,6 +1,7 @@
 defmodule Oi.Session do
   import Oi.Registry
 
+  @spec start(Oi.name(), keyword()) :: :ignore | {:error, any()} | {:ok, pid()} | {:ok, pid(), any()}
   def start(oi_name, opts \\ []) do
     case Registry.lookup(Oi.Registry, instances(oi_name)) do
       [{pid, _}] ->
@@ -16,6 +17,7 @@ defmodule Oi.Session do
     end
   end
 
+  @spec stop(Oi.name()) :: :ok | {:error, :not_found | :session_not_found}
   def stop(oi_name) do
     case Registry.lookup(Oi.SessionRegistry, instances(oi_name)) do
       [{pid, _}] -> DynamicSupervisor.terminate_child(Oi.SessionSupervisor, pid)
@@ -23,6 +25,7 @@ defmodule Oi.Session do
     end
   end
 
+  @spec resolve(Oi.name()) :: {:error, :session_not_found} | {:ok, pid()}
   def resolve(oi_name) do
     case Registry.lookup(Oi.SessionRegistry, server(oi_name)) do
       [{pid, _}] -> {:ok, pid}
