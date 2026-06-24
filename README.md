@@ -2,6 +2,8 @@
 
 Oi means Orchid integration, it provides simple API to cover heavy Orchid Step code.
 
+<!-- MDOC -->
+
 ## Example
 
 Demo.
@@ -23,6 +25,8 @@ orchid_recipe = Oi.build([FooStep])
 inputs = "Foo"
 
 ```
+
+<!-- MDOC -->
 
 ## Roadmap
 

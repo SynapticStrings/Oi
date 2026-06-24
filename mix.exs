@@ -24,6 +24,6 @@ defmodule Oi.MixProject do
     [
       {:orchid, "~> 0.6"},
       {:orchid_symbiont, "~> 0.2"}
-     ]
+    ]
   end
 end

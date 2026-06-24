@@ -2,7 +2,7 @@ defmodule OiTest do
   use ExUnit.Case
   doctest Oi
 
-  test "greets the world" do
-    assert Oi.hello() == :world
+  test "stub" do
+    assert 1 + 1 == 2
   end
 end

@@ -1,18 +1,15 @@
 defmodule Oi do
-  @moduledoc """
-  Documentation for `Oi`.
+  @doc_header """
+  Oi means Orchid integration.
   """
 
-  @doc """
-  Hello world.
+  @external_resource readme = Path.join([__DIR__, "../README.md"])
+  @doc_main readme
+            |> File.read!()
+            |> String.split("<!-- MDOC -->")
+            |> Enum.fetch!(1)
 
-  ## Examples
+  @moduledoc @doc_header <> @doc_main
 
-      iex> Oi.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
+  @type name :: String.t()
 end
