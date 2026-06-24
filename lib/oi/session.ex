@@ -29,9 +29,12 @@ defmodule Oi.Session do
     end
   end
 
+  # TODO
+  # 这里的 resolve 应该是定位到 container 那个进程上去
+  # 后面再改吧
   @spec resolve(Oi.name()) :: {:error, :session_not_found} | {:ok, pid()}
   def resolve(oi_name) do
-    case Registry.lookup(Oi.Registry, server(oi_name)) do
+    case Registry.lookup(Oi.Registry, instances(oi_name)) do
       [{pid, _}] -> {:ok, pid}
       [] -> {:error, :session_not_found}
     end
@@ -42,10 +45,10 @@ defmodule Oi.Session do
   @spec instances_tuple(Oi.name()) :: Oi.Registry.via_tuple()
   def instances_tuple(oi), do: via(oi, :instances)
 
-  @spec server(Oi.name()) :: Oi.Registry.key()
-  def server(oi), do: key(oi, :server)
-  @spec server_tuple(Oi.name()) :: Oi.Registry.via_tuple()
-  def server_tuple(oi), do: via(oi, :server)
+  # @spec server(Oi.name()) :: Oi.Registry.key()
+  # def server(oi), do: key(oi, :server)
+  # @spec server_tuple(Oi.name()) :: Oi.Registry.via_tuple()
+  # def server_tuple(oi), do: via(oi, :server)
 
   @spec tasks_tuple(Oi.name()) :: Oi.Registry.via_tuple()
   def tasks_tuple(oi), do: via(oi, :task_sup)
