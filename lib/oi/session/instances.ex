@@ -2,6 +2,10 @@ defmodule Oi.Session.Instances do
   @moduledoc "Instance Supervisor."
   use Supervisor
 
+  def start_link(oi_name, opts) do
+    Supervisor.start_link(__MODULE__, {oi_name, opts}, name: Oi.Session.instances_tuple(oi_name))
+  end
+
   @impl true
   def init({oi_name, opts}) do
     children = [

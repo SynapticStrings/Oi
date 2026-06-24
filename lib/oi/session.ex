@@ -23,7 +23,7 @@ defmodule Oi.Session do
 
   @spec stop(Oi.name()) :: :ok | {:error, :not_found | :session_not_found}
   def stop(oi_name) do
-    case Registry.lookup(Oi.SessionRegistry, instances(oi_name)) do
+    case Registry.lookup(Oi.Registry, instances(oi_name)) do
       [{pid, _}] -> DynamicSupervisor.terminate_child(Oi.SessionSupervisor, pid)
       [] -> {:error, :session_not_found}
     end
@@ -31,7 +31,7 @@ defmodule Oi.Session do
 
   @spec resolve(Oi.name()) :: {:error, :session_not_found} | {:ok, pid()}
   def resolve(oi_name) do
-    case Registry.lookup(Oi.SessionRegistry, server(oi_name)) do
+    case Registry.lookup(Oi.Registry, server(oi_name)) do
       [{pid, _}] -> {:ok, pid}
       [] -> {:error, :session_not_found}
     end
