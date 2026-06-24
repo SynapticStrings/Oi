@@ -27,13 +27,30 @@ defmodule Oi.Worker do
 
     {recipe, final_opts} = Configurator.apply_plugins(conf, {bundle.recipe, base_opts})
 
-    case Orchid.run(recipe, dynamic_inputs, final_opts) do
-      {:ok, results} -> {:ok, results}
-      {:error, reason} -> {:error, {:orchid_run_failed, reason}}
+    run_orchid(recipe, dynamic_inputs, final_opts)
+  end
+
+  defp run_orchid(recipe, params, opts) do
+    recipe
+    |> Orchid.run(params, opts)
+    |> normalize_payload()
+    |> case do
+      {:ok, param_map} ->
+        {:ok, param_map}
+
+      {:error, %Orchid.Error{} = err} ->
+        {:error, {:orchid_error, recipe.name, err}}
     end
   end
 
-  defp resolve_dependencies(%RecipeBundle{requires: requires}, %Drafting{memory: mem}, interventions) do
+  defp normalize_payload(%Orchid.Operon.Response{payload: payload}), do: payload
+  defp normalize_payload(payload), do: payload
+
+  defp resolve_dependencies(
+         %RecipeBundle{requires: requires},
+         %Drafting{memory: mem},
+         interventions
+       ) do
     Enum.map(requires, fn orchid_key ->
       case Map.fetch(mem, orchid_key) do
         {:ok, val} ->

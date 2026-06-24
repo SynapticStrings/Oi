@@ -1,37 +1,43 @@
 defmodule Oi.Workspace.Drafting do
   @moduledoc """
   Temporary result store for a single dispatch pass.
-
-  Replaces Quincunx's Blackboard. Holds computed outputs keyed by
-  `{node_or_cluster_id, orchid_io_key}`. Workers read dependencies
-  from here; Dispatcher merges results back after each stage.
-
-  Lifecycle: created fresh per `Oi.dispatch/2`, discarded after results
-  are collected by the caller.
+  Holds computed outputs keyed by Orchid io_key (e.g. `"pred_step|result"`),
+  which is already globally unique. Workers read dependencies from here;
+  the dispatcher merges per-stage deltas back after each barrier.
   """
 
-  @type addr :: {term(), Orchid.Step.io_key()}
-  @type t :: %__MODULE__{
-          memory: %{addr() => Orchid.Param.t() | any()}
-        }
+  @type io_key :: Orchid.Step.io_key()
+  @type t :: %__MODULE__{memory: %{io_key() => Orchid.Param.t()}}
 
   defstruct memory: %{}
 
   @spec new() :: t()
   def new, do: %__MODULE__{}
 
-  @spec put(t(), %{addr() => Orchid.Param.t() | any()}) :: t()
-  def put(%__MODULE__{} = drafting, new_data) when is_map(new_data) do
-    %{drafting | memory: Map.merge(drafting.memory, new_data)}
+  @spec new(%{io_key() => Orchid.Param.t()}) :: t()
+  def new(initial) when is_map(initial), do: %__MODULE__{memory: initial}
+
+  @doc "merge single delta(%{io_key => Orchid.Param})."
+  @spec put(t(), %{io_key() => Orchid.Param.t()}) :: t()
+  def put(%__MODULE__{memory: mem} = d, delta) when is_map(delta) do
+    %{d | memory: Map.merge(mem, delta)}
   end
 
-  @spec fetch(t(), addr()) :: {:ok, any()} | :error
-  def fetch(%__MODULE__{memory: mem}, addr) do
-    Map.fetch(mem, addr)
-  end
+  @spec fetch(t(), io_key()) :: {:ok, Orchid.Param.t()} | :error
+  def fetch(%__MODULE__{memory: mem}, key), do: Map.fetch(mem, key)
 
-  @spec fetch_many(t(), [addr()]) :: %{addr() => any()}
-  def fetch_many(%__MODULE__{memory: mem}, addrs) do
-    Map.new(addrs, fn addr -> {addr, Map.get(mem, addr)} end)
+  @doc """
+  按 keys 投影出一个 param_map。区分『缺失』和『值为 nil』：
+  缺失返回 error，nil 是合法值照常返回。
+  """
+  @spec resolve_many(t(), [io_key()]) ::
+          {:ok, %{io_key() => Orchid.Param.t()}} | {:error, {:unresolved, [io_key()]}}
+  def resolve_many(%__MODULE__{memory: mem}, keys) do
+    {found, missing} = Enum.split_with(keys, &Map.has_key?(mem, &1))
+
+    case missing do
+      [] -> {:ok, Map.new(found, &{&1, Map.fetch!(mem, &1)})}
+      _ -> {:error, {:unresolved, missing}}
+    end
   end
 end
