@@ -9,13 +9,15 @@ defmodule Oi.Dispatch.Drafting do
   @type io_key :: Orchid.Step.io_key()
   @type t :: %__MODULE__{memory: %{io_key() => Orchid.Param.t()}}
 
-  defstruct memory: %{}
+  defstruct memory: %{}, interventions: %{}
 
   @spec new() :: t()
   def new, do: %__MODULE__{}
 
   @spec new(%{io_key() => Orchid.Param.t()}) :: t()
   def new(initial) when is_map(initial), do: %__MODULE__{memory: initial}
+
+  def new(initial, interventions) when is_map(initial) and is_map(interventions), do: %__MODULE__{memory: initial, interventions: interventions}
 
   @doc "merge single delta(%{io_key => Orchid.Param})."
   @spec put(t(), %{io_key() => Orchid.Param.t()}) :: t()

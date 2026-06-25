@@ -17,7 +17,10 @@ defmodule Oi.Dispatch.Worker do
   def run(%Bundle{} = bundle, %Drafting{} = drafting, %Config{} = conf) do
     with {:ok, dynamic_inputs} <-
            resolve_dependencies(bundle, drafting) do
-      base_opts = Keyword.merge(conf.orchid_opts, baggage: conf.orchid_baggage)
+      base_opts =
+        Keyword.merge(conf.orchid_opts,
+          baggage: Map.put(conf.orchid_baggage, :interventions, drafting.interventions)
+        )
 
       {recipe, final_opts} = Config.apply_orchid_adapters(conf, {bundle.recipe, base_opts})
       run_orchid(recipe, dynamic_inputs, final_opts)
@@ -57,5 +60,4 @@ defmodule Oi.Dispatch.Worker do
       {:error, _} = err -> err
     end
   end
-
 end

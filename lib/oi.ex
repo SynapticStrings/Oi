@@ -72,6 +72,7 @@ defmodule Oi do
   @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
   def execute(%Compiled{} = compiled, opts \\ []) do
     inputs = Keyword.get(opts, :inputs, %{})
+
     interventions =
       opts
       |> Keyword.get(:interventions, %{})
@@ -80,15 +81,12 @@ defmodule Oi do
         {key, v} when is_binary(key) -> {key, v}
       end)
 
-    baggage_base = opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{})
-    baggage = Map.merge(baggage_base, %{interventions: interventions})
-
-    conf = Config.new(opts |> Keyword.drop([:interventions, :orchid_baggage]) |> Keyword.put(:orchid_baggage, baggage))
+    conf = prepare_config(opts)
 
     initial_memory =
       Map.new(inputs, fn {k, v} -> {k, Orchid.Param.new(k, :any, v)} end)
 
-    drafting = Drafting.new(initial_memory)
+    drafting = Drafting.new(initial_memory, interventions)
 
     case Orchestrator.dispatch(compiled.plan, drafting, conf) do
       {:ok, final_drafting} ->
@@ -112,5 +110,15 @@ defmodule Oi do
     with {:ok, compiled} <- compile(graph, cluster) do
       execute(compiled, execute_opts)
     end
+  end
+
+  defp prepare_config(opts) do
+    baggage = opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{})
+
+    Config.new(
+      opts
+      |> Keyword.drop([:interventions, :orchid_baggage])
+      |> Keyword.put(:orchid_baggage, baggage)
+    )
   end
 end
