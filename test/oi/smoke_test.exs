@@ -2,7 +2,7 @@ defmodule Oi.SmokeTest do
   use ExUnit.Case
 
   import OiTest.GraphFactory
-  alias Oi.{Compiler, Compiled}
+  alias Oi.Compiler
   alias Oi.Compiler.Bundle
   alias Oi.Topology.{Graph, Cluster}
   alias Oi.Topology.Graph.{Node, Edge}
@@ -53,7 +53,7 @@ defmodule Oi.SmokeTest do
 
       {:ok, compiled} = Oi.compile(graph)
 
-      assert is_struct(compiled, Compiled)
+      assert is_struct(compiled, Compiler.Compiled)
       assert length(compiled.bundles) == 1
       assert compiled.plan != nil
       assert compiled.plan.total_tasks == 1
