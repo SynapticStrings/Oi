@@ -15,7 +15,7 @@ defmodule Oi do
 
   alias Oi.{Compiler, Dispatcher, Configurator, Compiled, Result}
   alias Oi.Topology.{Graph, Cluster}
-  alias Oi.{Planning, Drafting}
+  alias Oi.Drafting
 
   @doc """
   Compile graph into static bundles + plan.
@@ -27,7 +27,7 @@ defmodule Oi do
   def compile(graph, cluster \\ %Oi.Topology.Cluster{}) do
     case Compiler.compile_graph(graph, cluster) do
       {:ok, bundles} ->
-        {:ok, plan} = Planning.build(bundles)
+        {:ok, plan} = Compiler.build(bundles)
         {:ok, %Compiled{bundles: bundles, plan: plan}}
 
       {:error, _} = err ->

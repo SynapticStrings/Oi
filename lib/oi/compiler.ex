@@ -14,8 +14,10 @@ defmodule Oi.Compiler do
   alias Oi.Topology.Graph.PortRef
   alias Oi.Compiler.RecipeBundle
 
+  # ---- Phase I: Build RecipeBundle ----
+
   @doc """
-  Phase 1: Compile graph + cluster into static RecipeBundles (no interventions).
+  Compile graph + cluster into static RecipeBundles (no interventions).
 
   Reusable across different intervention sets.
   """
@@ -33,6 +35,52 @@ defmodule Oi.Compiler do
         end)
 
       {:ok, bundles}
+    end
+  end
+
+  # ---- Phase II: Build Plannings ----
+
+  alias Oi.Compiler.Planning.{Plan, Stage}
+
+  @doc """
+  Build a Plan from a flat list of RecipeBundles.
+
+  Bundles are grouped by their position in the compiled output.
+  Within a single workspace, all bundles form a linear sequence
+  (one bundle per cluster). Bundles at the same index across
+  different compilations would run in the same stage.
+
+  For a single workspace (one graph → one compile call), each
+  bundle is its own stage — they execute sequentially in topo order.
+  """
+  @spec build([RecipeBundle.t()]) :: {:ok, Plan.t()} | {:error, :cycle_detected}
+  def build(bundles) do
+    # producer_key => bundle.name
+    # producer means its io_key
+    producers =
+      for b <- bundles, key <- b.exports, into: %{}, do: {key, b.node_ids}
+
+    # bundle.name => [upstream bundle.name]
+    deps =
+      Map.new(bundles, fn b ->
+        upstream =
+          b.requires
+          |> Enum.flat_map(fn key ->
+            case producers[key] do
+              # external dependency
+              nil -> []
+
+              ids -> [ids]
+            end
+          end)
+          |> Enum.uniq()
+
+        {b.node_ids, upstream}
+      end)
+
+    case assign_levels(bundles, deps) do
+      {:ok, level_of} -> {:ok, Plan.new(to_stages(bundles, level_of))}
+      :error -> {:error, :cycle_detected}
     end
   end
 
@@ -119,5 +167,48 @@ defmodule Oi.Compiler do
     ports
     |> Enum.reject(fn port -> Enum.any?(edges, &(Map.get(&1, match_field) == port)) end)
     |> Enum.map(fn port -> PortRef.to_orchid_key({:port, node.id, port}) end)
+  end
+
+  # ---- Phase 2 internals ----
+
+  defp assign_levels(bundles, deps) do
+    ids = Enum.map(bundles, & &1.node_ids)
+    do_assign(ids, deps, %{}, length(ids))
+  end
+
+  # max(fuel) <- num(bundle)
+  # fuel < 0 -> has cycle
+  defp do_assign(_ids, _deps, _levels, fuel) when fuel < 0, do: :error
+
+  defp do_assign(ids, deps, levels, fuel) do
+    {resolved, pending} =
+      Enum.split_with(ids, fn id ->
+        Enum.all?(deps[id], &Map.has_key?(levels, &1))
+      end)
+
+    cond do
+      resolved == [] and pending != [] -> :error
+      pending == [] -> {:ok, merge_levels(resolved, deps, levels)}
+      true -> do_assign(pending, deps, merge_levels(resolved, deps, levels), fuel - 1)
+    end
+  end
+
+  defp merge_levels(resolved, deps, levels) do
+    Enum.reduce(resolved, levels, fn id, acc ->
+      level =
+        deps[id]
+        |> Enum.map(&Map.fetch!(acc, &1))
+        |> Enum.max(fn -> -1 end)
+        |> Kernel.+(1)
+
+      Map.put(acc, id, level)
+    end)
+  end
+
+  defp to_stages(bundles, level_of) do
+    bundles
+    |> Enum.group_by(fn b -> level_of[b.node_ids] end)
+    |> Enum.sort_by(fn {level, _} -> level end)
+    |> Enum.map(fn {level, bs} -> %Stage{index: level, tasks: bs} end)
   end
 end

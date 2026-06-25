@@ -7,7 +7,7 @@ defmodule Oi.Compiled do
   """
 
   alias Oi.Compiler.RecipeBundle
-  alias Oi.Planning
+  alias Oi.Compiler.Planning
 
   @type t :: %__MODULE__{
           bundles: [RecipeBundle.t()],

@@ -6,7 +6,7 @@ defmodule Oi.Dispatcher do
   enforces barrier before next stage. Results are merged into the drafting.
   """
 
-  alias Oi.{Planning, Drafting}
+  alias Oi.{Compiler.Planning, Drafting}
   alias Oi.Configurator
 
   @spec dispatch(Planning.Plan.t(), Drafting.t(), Configurator.t()) ::
