@@ -16,6 +16,7 @@ defmodule Oi do
   alias Oi.{Compile, Compiled, Result}
   alias Oi.Dispatch.{Config, Drafting, Orchestrator}
   alias Oi.Topology.{Graph, Cluster}
+  alias Oi.Topology.Graph.PortRef
 
   @doc """
   Compile graph into static bundles + plan.
@@ -71,9 +72,18 @@ defmodule Oi do
   @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
   def execute(%Compiled{} = compiled, opts \\ []) do
     inputs = Keyword.get(opts, :inputs, %{})
-    interventions = Keyword.get(opts, :interventions, %{})
+    interventions =
+      opts
+      |> Keyword.get(:interventions, %{})
+      |> Map.new(fn
+        {{:port, node, port}, v} -> {PortRef.to_orchid_key({:port, node, port}), v}
+        {key, v} when is_binary(key) -> {key, v}
+      end)
 
-    conf = Config.new(opts ++ [interventions: interventions])
+    baggage_base = opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{})
+    baggage = Map.merge(baggage_base, %{interventions: interventions})
+
+    conf = Config.new(opts |> Keyword.drop([:interventions, :orchid_baggage]) |> Keyword.put(:orchid_baggage, baggage))
 
     initial_memory =
       Map.new(inputs, fn {k, v} -> {k, Orchid.Param.new(k, :any, v)} end)

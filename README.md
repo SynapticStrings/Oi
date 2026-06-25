@@ -1,4 +1,4 @@
-# [WIP]Oi
+# Oi
 
 Oi means Orchid integration — lightweight glue layer between
 [Orchid](https://github.com/SynapticStrings/Orchid) workflows and
@@ -8,18 +8,27 @@ Oi means Orchid integration — lightweight glue layer between
 
 ## Core concepts
 
-- **Workspace** — pure data struct holding graph, cluster, interventions.
-  No process, no GenServer. Compiled and dispatched via pure functions.
+- **Graph → Compile → Execute** — three-phase pipeline:
+  1. Build a `Graph` of step nodes and edges
+  2. `Oi.compile(graph)` — topology → static `Compiled` (bundles + plan, reusable)
+  3. `Oi.execute(compiled, opts)` — resolve inputs, apply plugins, run via pluggable executor
 
-- **Compile + Dispatch** — two-phase pipeline:
-  1. `Oi.compile/1` — topology → static bundles (reusable)
-  2. `Oi.execute/2` — bind interventions → plan → execute via pluggable executor
+- **Compiled** — immutable compilation product. Compile once, dispatch many times
+  with different inputs / interventions / executors.
 
-- **Executor** — pluggable task execution strategy.
-  Built-in: `Sync` (serial), `TaskSup` (Task.Supervisor), `Pool` (NimblePool)(in future).
+- **Inputs vs Interventions** — two kinds of external data:
+  - `inputs:` — `%{"io_key" => payload}` seeded into drafting memory before dispatch
+  - `interventions:` — `%{{:port, node, port} => {type, payload}}` merged into
+    Orchid baggage, consumed by `Orchid.Hook.ApplyInterventions` per-step
 
-- **Session** — optional process tree per tenant, wrapping `OrchidSymbiont.Runtime`
-  for multi-tenant isolation.
+- **Executor** — pluggable task fan-out per stage. Built-in: `Sync` (serial),
+  `TaskSup` (Task.Supervisor). `Pool` (NimblePool) planned.
+
+- **Session** — optional multi-tenant isolation via `Oi.Runtime.Session`,
+  wrapping per-tenant `OrchidSymbiont.Runtime` + `Task.Supervisor`.
+
+- **Hooks** — lifecycle callbacks in Config: `on_error(reason, stage, drafting)`.
+  `before_dispatch`, `before_stage`, `after_stage` planned.
 
 ## Quick start
 
@@ -43,6 +52,9 @@ end
 ### Build and run
 
 ```elixir
+alias Oi.Topology.Graph
+alias Oi.Topology.Graph.Node
+
 graph =
   Graph.new()
   |> Graph.add_node(%Node{
@@ -51,30 +63,45 @@ graph =
     inputs: [:text],
     outputs: [:result]
   })
- 
+
 {:ok, compiled} = Oi.compile(graph)
- 
-{:ok, result} =
-  Oi.execute(compiled,
-    inputs: %{"up|text" => "hello"}
-  )
- 
-{:ok, res} = Oi.Result.reify(result, "up|result")
-# => "HELLO"
+
+{:ok, result} = Oi.execute(compiled,
+  inputs: %{"up|text" => "hello"}
+)
+
+Oi.Result.reify(result, "up|result")
+# => {:ok, "HELLO"}
+```
+
+### With interventions
+
+```elixir
+{:ok, result} = Oi.execute(compiled,
+  inputs: %{"step1|in" => "hello"},
+  interventions: %{
+    {:port, :step2, :in} => {:override, "forced_value"}
+  }
+)
 ```
 
 ### Multi-tenant with Session
 
 ```elixir
 Oi.Runtime.Session.start("tenant-1")
-Oi.Runtime.Session.start("tenant-2")
 
-ws = Oi.Workspace.new("tenant-1", graph)
-{:ok, compiled} = Oi.compile(ws)
-Oi.execute(compiled,
+graph = build_graph()
+{:ok, compiled} = Oi.compile(graph)
+
+{:ok, result} = Oi.execute(compiled,
+  inputs: %{"step|in" => "data"},
   executor: Oi.Executor.TaskSup,
-  executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("tenant-1")]
+  executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("tenant-1")],
+  orchid_baggage: %{scope_id: "tenant-1"},
+  orchid_opts: [global_hooks_stack: [OrchidSymbiont.Hooks.Injector]]
 )
+
+Oi.Runtime.Session.stop("tenant-1")
 ```
 
 ### Symbiont step
@@ -96,12 +123,32 @@ defmodule MyApp.Steps.Predict do
 end
 ```
 
+### Hooks (error telemetry)
+
+```elixir
+{:ok, result} = Oi.execute(compiled,
+  inputs: %{"step|in" => "data"},
+  hooks: %{
+    on_error: [
+      fn reason, stage, drafting ->
+        Logger.error("Stage #{stage.index} failed: #{inspect(reason)}")
+      end
+    ]
+  }
+)
+```
+
 <!-- MDOC -->
 
 ## Roadmap
 
-- [x] Scaffold
-- [x] Exclipit inputs
+- [x] Graph compilation + staged dispatch
+- [x] Pluggable Executor (Sync / TaskSup)
+- [x] Multi-tenant Session
+- [x] Oi.Step macro DSL
+- [x] Interventions (via Orchid baggage)
+- [x] Lifecycle hooks (on_error)
+- [ ] Executor.Pool (NimblePool for GPU-intensive tasks)
 
 ## License
 

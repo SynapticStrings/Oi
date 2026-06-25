@@ -6,7 +6,6 @@ defmodule Oi.Dispatch.Worker do
   via Config, then delegates to `Orchid.run/3`.
   """
 
-  alias Oi.Topology.Graph.PortRef
   alias Oi.Compile.Bundle
   alias Oi.Dispatch.Drafting
   alias Oi.Dispatch.Config
@@ -16,18 +15,9 @@ defmodule Oi.Dispatch.Worker do
   @spec run(Bundle.t(), Drafting.t(), Config.t()) ::
           {:ok, delta()} | {:error, term()}
   def run(%Bundle{} = bundle, %Drafting{} = drafting, %Config{} = conf) do
-    intervention_by_orchid_key =
-      conf.interventions
-      |> Enum.filter(fn {{:port, node, _}, _} -> node in bundle.node_ids end)
-      |> Map.new(fn {k, v} -> {PortRef.to_orchid_key(k), v} end)
-
     with {:ok, dynamic_inputs} <-
            resolve_dependencies(bundle, drafting) do
-      baggage =
-        conf.orchid_baggage
-        |> Map.merge(%{interventions: intervention_by_orchid_key})
-
-      base_opts = Keyword.merge(conf.orchid_opts, baggage: baggage)
+      base_opts = Keyword.merge(conf.orchid_opts, baggage: conf.orchid_baggage)
 
       {recipe, final_opts} = Config.apply_plugins(conf, {bundle.recipe, base_opts})
       run_orchid(recipe, dynamic_inputs, final_opts)
