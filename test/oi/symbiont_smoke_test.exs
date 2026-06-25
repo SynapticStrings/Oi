@@ -1,7 +1,7 @@
 defmodule Oi.SymbiontSmokeTest do
   use ExUnit.Case
 
-  alias Oi.Session
+  alias Oi.Runtime.Session
   alias Oi.Topology.Graph
   alias Oi.Topology.Graph.Node
 

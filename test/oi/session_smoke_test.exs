@@ -1,8 +1,8 @@
-defmodule Oi.SessionSmokeTest do
+defmodule Oi.Runtime.SessionSmokeTest do
   use ExUnit.Case
 
-  alias Oi.Session
-  
+  alias Oi.Runtime.Session
+
   import OiTest.GraphFactory
 
   describe "Session process isolation" do
@@ -42,8 +42,8 @@ defmodule Oi.SessionSmokeTest do
       refute sup_x == sup_y
 
       # Both are alive (via tuples need Registry.lookup)
-      assert [{_pid_x, _}] = Registry.lookup(Oi.Registry, Session.instances("tenant-x"))
-      assert [{_pid_y, _}] = Registry.lookup(Oi.Registry, Session.instances("tenant-y"))
+      assert [{_pid_x, _}] = Registry.lookup(Oi.Runtime.Registry, Session.instances("tenant-x"))
+      assert [{_pid_y, _}] = Registry.lookup(Oi.Runtime.Registry, Session.instances("tenant-y"))
 
       Session.stop("tenant-x")
       Session.stop("tenant-y")

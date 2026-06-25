@@ -1,4 +1,4 @@
-defmodule Oi.Registry do
+defmodule Oi.Runtime.Registry do
   @moduledoc "Local process storage for Oi sessions."
   # Inspired by Oban's Registry design.
 

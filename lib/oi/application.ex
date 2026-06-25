@@ -7,14 +7,14 @@ defmodule Oi.Application do
   def start(_type, _args) do
     children = [
       # Storage processes.
-      Oi.Registry,
+      Oi.Runtime.Registry,
 
       # Manage running calculate tasks.
       # {Task.Supervisor, name: Oi.RenderTaskSup},
       # used by Session? TBD
 
       # Manage sessions.
-      {DynamicSupervisor, name: Oi.SessionSupervisor, strategy: :one_for_one}
+      {DynamicSupervisor, name: Oi.Runtime.SessionSupervisor, strategy: :one_for_one}
     ]
 
     opts = [strategy: :one_for_one, name: Oi.Supervisor]

@@ -64,7 +64,7 @@ defmodule Oi do
       # With Task.Supervisor
       {:ok, result} = Oi.execute(compiled,
         executor: Oi.Executor.TaskSup,
-        executor_opts: [sup: Oi.Session.tasks_tuple("svs-1")]
+        executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("svs-1")]
       )
   """
   @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}

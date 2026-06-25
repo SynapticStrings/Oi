@@ -66,14 +66,14 @@ graph =
 ### Multi-tenant with Session
 
 ```elixir
-Oi.Session.start("tenant-1")
-Oi.Session.start("tenant-2")
+Oi.Runtime.Session.start("tenant-1")
+Oi.Runtime.Session.start("tenant-2")
 
 ws = Oi.Workspace.new("tenant-1", graph)
-{:ok, ws} = Oi.compile(ws)
-{:ok, ws} = Oi.dispatch(ws,
+{:ok, compiled} = Oi.compile(ws)
+Oi.execute(compiled,
   executor: Oi.Executor.TaskSup,
-  executor_opts: [sup: Oi.Session.tasks_tuple("tenant-1")]
+  executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("tenant-1")]
 )
 ```
 
@@ -101,7 +101,7 @@ end
 ## Roadmap
 
 - [x] Scaffold
-- [ ] Exclipit inputs
+- [x] Exclipit inputs
 
 ## License
 
