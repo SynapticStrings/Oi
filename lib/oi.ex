@@ -13,7 +13,8 @@ defmodule Oi do
 
   @type name :: String.t()
 
-  alias Oi.{Drafting, Compile, Compiled, Dispatch.Orchestrator, Dispatch.Config, Result}
+  alias Oi.{Compile, Compiled, Result}
+  alias Oi.Dispatch.{Config, Drafting, Orchestrator}
   alias Oi.Topology.{Graph, Cluster}
 
   @doc """

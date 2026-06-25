@@ -6,7 +6,7 @@ defmodule Oi.Dispatch.Orchestrator do
   enforces barrier before next stage. Results are merged into the drafting.
   """
 
-  alias Oi.{Compile.Planning, Drafting}
+  alias Oi.{Compile.Planning, Dispatch.Drafting}
   alias Oi.Dispatch.Config
 
   @spec dispatch(Planning.Plan.t(), Drafting.t(), Config.t()) ::
@@ -22,7 +22,7 @@ defmodule Oi.Dispatch.Orchestrator do
 
   defp run_stage(%Planning.Stage{} = stage, drafting, %Config{} = conf) do
     worker_fn = fn bundle ->
-      Oi.Worker.run(bundle, drafting, conf)
+      Oi.Dispatch.Worker.run(bundle, drafting, conf)
     end
 
     stage.tasks

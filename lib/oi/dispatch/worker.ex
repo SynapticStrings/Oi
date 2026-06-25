@@ -1,4 +1,4 @@
-defmodule Oi.Worker do
+defmodule Oi.Dispatch.Worker do
   @moduledoc """
   Executes a single Bundle in isolation.
 
@@ -8,10 +8,10 @@ defmodule Oi.Worker do
 
   alias Oi.Topology.Graph.PortRef
   alias Oi.Compile.Bundle
-  alias Oi.Drafting
+  alias Oi.Dispatch.Drafting
   alias Oi.Dispatch.Config
 
-  @type delta :: %{Drafting.io_key() => Orchid.Param.t()}
+  @type delta :: %{Oi.Dispatch.Drafting.io_key() => Orchid.Param.t()}
 
   @spec run(Bundle.t(), Drafting.t(), Config.t()) ::
           {:ok, delta()} | {:error, term()}
