@@ -3,7 +3,7 @@ defmodule Oi.SmokeTest do
 
   import OiTest.GraphFactory
   alias Oi.{Compiler, Compiled}
-  alias Oi.Compiler.RecipeBundle
+  alias Oi.Compiler.Bundle
   alias Oi.Topology.{Graph, Cluster}
   alias Oi.Topology.Graph.{Node, Edge}
 
@@ -11,9 +11,9 @@ defmodule Oi.SmokeTest do
     test "compile_graph without cluster produces single bundle" do
       graph = build_finin_and_fanout_dag()
 
-      {:ok, [bundle]} = Compiler.compile_graph(graph)
+      {:ok, [bundle]} = Compiler.Bundle.compile_graph(graph)
 
-      assert is_struct(bundle, RecipeBundle)
+      assert is_struct(bundle, Bundle)
       assert "step1|in" in bundle.requires
       assert "step2|in" in bundle.requires
       assert "step4|out1" in bundle.exports
@@ -24,7 +24,7 @@ defmodule Oi.SmokeTest do
       graph = build_finin_and_fanout_dag()
       cluster = %Cluster{node_colors: %{step3: :red}}
 
-      {:ok, bundles} = Compiler.compile_graph(graph, cluster)
+      {:ok, bundles} = Compiler.Bundle.compile_graph(graph, cluster)
 
       assert length(bundles) == 2
       [bundle_red, bundle_default] = bundles
@@ -43,7 +43,7 @@ defmodule Oi.SmokeTest do
         |> Graph.add_edge(Edge.new(:a, :out, :b, :in))
         |> Graph.add_edge(Edge.new(:b, :out, :a, :in))
 
-      assert {:error, :cycle_detected} = Compiler.compile_graph(graph)
+      assert {:error, :cycle_detected} = Compiler.Bundle.compile_graph(graph)
     end
   end
 

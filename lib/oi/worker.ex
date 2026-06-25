@@ -1,21 +1,21 @@
 defmodule Oi.Worker do
   @moduledoc """
-  Executes a single RecipeBundle in isolation.
+  Executes a single Bundle in isolation.
 
   Resolves dependencies from the Drafting, applies the plugin pipeline
   via Configurator, then delegates to `Orchid.run/3`.
   """
 
   alias Oi.Topology.Graph.PortRef
-  alias Oi.Compiler.RecipeBundle
+  alias Oi.Compiler.Bundle
   alias Oi.Drafting
   alias Oi.Configurator
 
   @type delta :: %{Drafting.io_key() => Orchid.Param.t()}
 
-  @spec run(RecipeBundle.t(), Drafting.t(), Configurator.t()) ::
+  @spec run(Bundle.t(), Drafting.t(), Configurator.t()) ::
           {:ok, delta()} | {:error, term()}
-  def run(%RecipeBundle{} = bundle, %Drafting{} = drafting, %Configurator{} = conf) do
+  def run(%Bundle{} = bundle, %Drafting{} = drafting, %Configurator{} = conf) do
     intervention_by_orchid_key =
       conf.interventions
       |> Enum.filter(fn {{:port, node, _}, _} -> node in bundle.node_ids end)
@@ -51,7 +51,7 @@ defmodule Oi.Worker do
   defp normalize_payload(payload), do: payload
 
   defp resolve_dependencies(
-         %RecipeBundle{inputs: inputs},
+         %Bundle{inputs: inputs},
          %Drafting{memory: mem},
          interventions
        ) do

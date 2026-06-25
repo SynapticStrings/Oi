@@ -6,11 +6,11 @@ defmodule Oi.Compiled do
   calls with different inputs/interventions.
   """
 
-  alias Oi.Compiler.RecipeBundle
+  alias Oi.Compiler.Bundle
   alias Oi.Compiler.Planning
 
   @type t :: %__MODULE__{
-          bundles: [RecipeBundle.t()],
+          bundles: [Bundle.t()],
           plan: Planning.Plan.t()
         }
 

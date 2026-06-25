@@ -25,11 +25,10 @@ defmodule Oi do
   """
   @spec compile(Graph.t(), Cluster.t()) :: {:ok, Compiled.t()} | {:error, :cycle_detected}
   def compile(graph, cluster \\ %Oi.Topology.Cluster{}) do
-    case Compiler.compile_graph(graph, cluster) do
-      {:ok, bundles} ->
-        {:ok, plan} = Compiler.build(bundles)
-        {:ok, %Compiled{bundles: bundles, plan: plan}}
-
+    with {:ok, bundles} <- Compiler.Bundle.compile_graph(graph, cluster),
+         {:ok, plan} <- Compiler.Planning.build(bundles) do
+      {:ok, %Compiled{bundles: bundles, plan: plan}}
+    else
       {:error, _} = err ->
         err
     end
