@@ -47,41 +47,6 @@ defmodule Oi.SmokeTest do
     end
   end
 
-  describe "bind (phase 2)" do
-    test "bind distributes interventions by node membership" do
-      graph = build_finin_and_fanout_dag()
-      cluster = %Cluster{node_colors: %{step3: :red}}
-
-      {:ok, static_bundles} = Compiler.compile_graph(graph, cluster)
-
-      interventions = %{
-        {:port, :step1, :in} => {:input, "Foo"},
-        {:port, :step3, :in1} => {:override, "OverrideFoo"}
-      }
-
-      bound = Compiler.bind(static_bundles, interventions)
-
-      # step1 is in default cluster bundle
-      default_bundle = Enum.find(bound, fn b -> :step1 in b.node_ids end)
-      assert Map.has_key?(default_bundle.interventions, {:port, :step1, :in})
-
-      # step3 is in red cluster bundle
-      red_bundle = Enum.find(bound, fn b -> :step3 in b.node_ids end)
-      assert Map.has_key?(red_bundle.interventions, {:port, :step3, :in1})
-      refute Map.has_key?(red_bundle.interventions, {:port, :step1, :in})
-    end
-
-    test "bind with empty interventions produces empty interventions on each bundle" do
-      {:ok, static_bundles} = Compiler.compile_graph(build_finin_and_fanout_dag())
-
-      bound = Compiler.bind(static_bundles, %{})
-
-      Enum.each(bound, fn bundle ->
-        assert bundle.interventions == %{}
-      end)
-    end
-  end
-
   describe "Oi.compile (facade)" do
     test "fills static_bundles and plan" do
       graph = build_finin_and_fanout_dag()

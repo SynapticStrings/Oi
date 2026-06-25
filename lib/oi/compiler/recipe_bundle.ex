@@ -17,11 +17,6 @@ defmodule Oi.Compiler.RecipeBundle do
           exports: [Orchid.Step.io_key()],
           inputs: [Orchid.Step.io_key()],
           node_ids: [Graph.Node.id()],
-          interventions: interventions_map()
-        }
-
-  @type interventions_map :: %{
-          Graph.PortRef.t() => {intervention_type :: atom(), payload :: term()}
         }
 
   defstruct [
@@ -29,25 +24,7 @@ defmodule Oi.Compiler.RecipeBundle do
     requires: [],
     exports: [],
     inputs: [],
-    node_ids: [],
-    interventions: %{}
+    node_ids: []
   ]
 
-  @doc """
-  Bind interventions to static recipe bundles, filtering by node membership.
-
-  Only interventions whose target node belongs to a bundle's `node_ids`
-  are attached to that bundle.
-  """
-  @spec bind_interventions([t()], interventions_map()) :: [t()]
-  def bind_interventions(static_bundles, interventions_map) do
-    Enum.map(static_bundles, fn %{node_ids: node_ids} = bundle ->
-      filtered =
-        Map.filter(interventions_map, fn {{:port, target_node, _}, _} ->
-          target_node in node_ids
-        end)
-
-      %{bundle | interventions: filtered}
-    end)
-  end
 end

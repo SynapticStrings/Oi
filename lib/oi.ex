@@ -44,6 +44,7 @@ defmodule Oi do
   ## Options
 
     * `:interventions` — overrides `workspace.interventions` (default)
+    * `:inputs` — map of external io_key => payload, seeded into drafting memory
     * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or `Oi.Executor.Pool`
     * `:executor_opts` — passed to the executor (e.g. `[sup: MyTaskSup]`)
     * `:plugins` — OrchidPlugin pipeline
@@ -73,17 +74,17 @@ defmodule Oi do
         {:error, :not_compiled}
 
       %Planning.Plan{} ->
-        _inputs = Keyword.get(opts, :inputs)
+        inputs = Keyword.get(opts, :inputs, %{})
         interventions = Keyword.get(opts, :interventions, ws.interventions)
-        bound_bundles = Compiler.bind(ws.static_bundles, interventions)
 
-        # Rebuild plan with bound bundles
-        {:ok, bound_plan} = Planning.build(bound_bundles)
+        conf = Configurator.new(opts ++ [interventions: interventions])
 
-        conf = Configurator.new(opts)
-        drafting = Drafting.new()
+        initial_memory =
+          Map.new(inputs, fn {k, v} -> {k, Orchid.Param.new(k, :any, v)} end)
 
-        case Dispatcher.dispatch(bound_plan, drafting, conf) do
+        drafting = Drafting.new(initial_memory)
+
+        case Dispatcher.dispatch(ws.plan, drafting, conf) do
           {:ok, final_drafting} ->
             {:ok, %{ws | drafting: final_drafting}}
 

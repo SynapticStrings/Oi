@@ -17,7 +17,9 @@ defmodule Oi.Worker do
           {:ok, delta()} | {:error, term()}
   def run(%RecipeBundle{} = bundle, %Drafting{} = drafting, %Configurator{} = conf) do
     intervention_by_orchid_key =
-      Map.new(bundle.interventions, fn {k, v} -> {PortRef.to_orchid_key(k), v} end)
+      conf.interventions
+      |> Enum.filter(fn {{:port, node, _}, _} -> node in bundle.node_ids end)
+      |> Map.new(fn {k, v} -> {PortRef.to_orchid_key(k), v} end)
 
     IO.puts("#{inspect(intervention_by_orchid_key |> Enum.map(fn {k, _} -> k end))}  #{inspect(bundle.inputs)}")
 

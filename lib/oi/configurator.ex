@@ -18,6 +18,7 @@ defmodule Oi.Configurator do
   """
 
   @type t :: %__MODULE__{
+          interventions: map(),
           executor: module(),
           executor_opts: keyword(),
           plugins: [
@@ -33,7 +34,8 @@ defmodule Oi.Configurator do
           timeout: timeout()
         }
 
-  defstruct executor: Oi.Executor.Sync,
+  defstruct interventions: %{},
+            executor: Oi.Executor.Sync,
             executor_opts: [],
             plugins: [],
             orchid_baggage: %{},
@@ -55,6 +57,7 @@ defmodule Oi.Configurator do
     executor_opts = Keyword.put_new(executor_opts, :timeout, timeout)
 
     %__MODULE__{
+      interventions: Keyword.get(opts, :interventions, %{}),
       executor: executor,
       executor_opts: executor_opts,
       plugins: Keyword.get(opts, :plugins, []),

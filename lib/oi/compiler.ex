@@ -8,8 +8,6 @@ defmodule Oi.Compiler do
      + recipe construction. Produces *static* bundles without interventions.
      Result is reusable across different intervention sets.
 
-  2. `bind/2` — attaches interventions to static bundles, filtered by node
-     membership. Cheap; can be called repeatedly with different interventions.
   """
 
   alias Oi.Topology.{Graph, Cluster}
@@ -36,16 +34,6 @@ defmodule Oi.Compiler do
 
       {:ok, bundles}
     end
-  end
-
-  @doc """
-  Phase 2: Bind interventions to static bundles.
-
-  Thin wrapper around `RecipeBundle.bind_interventions/2`.
-  """
-  @spec bind([RecipeBundle.t()], RecipeBundle.interventions_map()) :: [RecipeBundle.t()]
-  def bind(static_bundles, interventions) do
-    RecipeBundle.bind_interventions(static_bundles, interventions)
   end
 
   # --- Phase 1 internals ---

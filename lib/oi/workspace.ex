@@ -27,7 +27,7 @@ defmodule Oi.Workspace do
           id: id(),
           graph: Graph.t(Orchid.Step.implementation()),
           cluster: Cluster.t(),
-          interventions: RecipeBundle.interventions_map(),
+          interventions: map(),
           static_bundles: [RecipeBundle.t()] | nil,
           plan: Planning.Plan.t() | nil,
           drafting: Drafting.t() | nil
@@ -43,7 +43,7 @@ defmodule Oi.Workspace do
     drafting: nil
   ]
 
-  @spec new(id(), Graph.t(Orchid.Step.implementation()), Cluster.t(), RecipeBundle.interventions_map()) :: t()
+  @spec new(id(), Graph.t(Orchid.Step.implementation()), Cluster.t(), map()) :: t()
   def new(id, graph, cluster \\ %Cluster{}, interventions \\ %{}) do
     %__MODULE__{
       id: id,
