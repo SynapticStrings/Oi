@@ -1,0 +1,36 @@
+# Changelog
+
+## v0.2.0
+
+### Breaking
+
+- `Oi.compile/1` (taking `Workspace`) replaced by `Oi.compile/2` (taking `graph, cluster`)
+- `Oi.dispatch/2` replaced by `Oi.execute/2` (taking `Compiled.t()`)
+- `Oi.Workspace` struct removed
+- `Oi.Compiler.RecipeBundle` renamed to `Oi.Compile.Bundle`
+- `Oi.Workspace.Planning` renamed to `Oi.Compile.Planning`
+- `Oi.Configurator` renamed to `Oi.Dispatch.Config`
+- `Oi.Dispatcher` renamed to `Oi.Dispatch.Orchestrator`
+- `Oi.Drafting` renamed to `Oi.Dispatch.Drafting`
+- `Oi.Worker` renamed to `Oi.Dispatch.Worker`
+- `Oi.Session` / `Oi.Registry` moved to `Oi.Runtime.*`
+
+### Added
+
+- `Oi.Compiled` struct — static compilation product (bundles + plan)
+- `Oi.Result` struct — execution result with `memory` and `reify/2`
+- `:inputs` option for `Oi.execute/2` — external inputs seeded into drafting memory
+- `Oi.run/2` convenience — compiles + executes in one call
+- `Worker.resolve_dependencies` returns explicit `{:error, {:missing_input, key}}`
+
+### Changed
+
+- `RecipeBundle.interventions` field removed — interventions moved to `Dispatch.Config`
+- `Compiler.bind/2` removed — Worker filters interventions from config at runtime
+- `Drafting.memory` unified to store `Orchid.Param.t()` throughout (no payload extraction)
+- `Planning.build` no longer called twice (compile once, reuse plan in execute)
+- Drafting nil filtering commented out (pending review)
+
+### Internal
+
+- Namespace reorganized: `Oi.Compile.*`, `Oi.Dispatch.*`, `Oi.Runtime.*`
