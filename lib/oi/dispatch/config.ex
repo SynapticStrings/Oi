@@ -1,4 +1,4 @@
-defmodule Oi.Configurator do
+defmodule Oi.Dispatch.Config do
   @moduledoc """
   Immutable dispatch configuration.
 

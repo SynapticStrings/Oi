@@ -13,7 +13,7 @@ defmodule Oi do
 
   @type name :: String.t()
 
-  alias Oi.{Compiler, Dispatcher, Configurator, Result}
+  alias Oi.{Compiler, Dispatch.Orchestrator, Dispatch.Config, Result}
   alias Oi.Topology.{Graph, Cluster}
   alias Oi.Drafting
 
@@ -71,14 +71,14 @@ defmodule Oi do
     inputs = Keyword.get(opts, :inputs, %{})
     interventions = Keyword.get(opts, :interventions, %{})
 
-    conf = Configurator.new(opts ++ [interventions: interventions])
+    conf = Config.new(opts ++ [interventions: interventions])
 
     initial_memory =
       Map.new(inputs, fn {k, v} -> {k, Orchid.Param.new(k, :any, v)} end)
 
     drafting = Drafting.new(initial_memory)
 
-    case Dispatcher.dispatch(compiled.plan, drafting, conf) do
+    case Orchestrator.dispatch(compiled.plan, drafting, conf) do
       {:ok, final_drafting} ->
         {:ok, Result.new(final_drafting.memory)}
 

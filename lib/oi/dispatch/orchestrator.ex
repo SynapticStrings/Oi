@@ -1,4 +1,4 @@
-defmodule Oi.Dispatcher do
+defmodule Oi.Dispatch.Orchestrator do
   @moduledoc """
   Orchestrates barrier-synchronized execution of plan stages.
 
@@ -7,11 +7,11 @@ defmodule Oi.Dispatcher do
   """
 
   alias Oi.{Compiler.Planning, Drafting}
-  alias Oi.Configurator
+  alias Oi.Dispatch.Config
 
-  @spec dispatch(Planning.Plan.t(), Drafting.t(), Configurator.t()) ::
+  @spec dispatch(Planning.Plan.t(), Drafting.t(), Config.t()) ::
           {:ok, Drafting.t()} | {:error, term()}
-  def dispatch(%Planning.Plan{} = plan, %Drafting{} = drafting, %Configurator{} = conf) do
+  def dispatch(%Planning.Plan{} = plan, %Drafting{} = drafting, %Config{} = conf) do
     Enum.reduce_while(plan.stages, {:ok, drafting}, fn stage, {:ok, current_drafting} ->
       case run_stage(stage, current_drafting, conf) do
         {:ok, updated} -> {:cont, {:ok, updated}}
@@ -20,7 +20,7 @@ defmodule Oi.Dispatcher do
     end)
   end
 
-  defp run_stage(%Planning.Stage{} = stage, drafting, %Configurator{} = conf) do
+  defp run_stage(%Planning.Stage{} = stage, drafting, %Config{} = conf) do
     worker_fn = fn bundle ->
       Oi.Worker.run(bundle, drafting, conf)
     end

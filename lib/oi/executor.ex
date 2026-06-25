@@ -3,7 +3,7 @@ defmodule Oi.Executor do
   Pluggable task execution strategy for stage fan-out.
 
   Each implementation controls how tasks within a single stage are
-  dispatched and collected. The Dispatcher calls `run/3` once per stage.
+  dispatched and collected. The Dispatch calls `run/3` once per stage.
 
   ## Built-in implementations
 
