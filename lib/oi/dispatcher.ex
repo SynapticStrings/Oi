@@ -40,10 +40,11 @@ defmodule Oi.Dispatcher do
     entries =
       outputs
       |> Enum.map(fn
-        %Orchid.Param{} = p -> {p.name, Orchid.Param.get_payload(p)}
-        {port_name, p} -> {port_name, Orchid.Param.get_payload(p)}
+        %Orchid.Param{} = p -> {p.name, p}
+        {port_name, p} -> {port_name, p}
       end)
-      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      # TODO: reconsider nil filtering after restructure
+      # |> Enum.reject(fn {_k, v} -> is_nil(v) end)
       |> Map.new()
 
     Drafting.put(drafting, entries)

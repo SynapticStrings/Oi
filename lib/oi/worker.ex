@@ -21,7 +21,6 @@ defmodule Oi.Worker do
       |> Enum.filter(fn {{:port, node, _}, _} -> node in bundle.node_ids end)
       |> Map.new(fn {k, v} -> {PortRef.to_orchid_key(k), v} end)
 
-    IO.puts("#{inspect(intervention_by_orchid_key |> Enum.map(fn {k, _} -> k end))}  #{inspect(bundle.inputs)}")
 
     dynamic_inputs = resolve_dependencies(bundle, drafting, intervention_by_orchid_key)
 
@@ -59,11 +58,8 @@ defmodule Oi.Worker do
        ) do
     Enum.map(requires, fn orchid_key ->
       case Map.fetch(mem, orchid_key) do
-        {:ok, val} ->
-          Orchid.Param.new(orchid_key, :any, val)
-
-        :error ->
-          resolve_from_intervention(orchid_key, interventions)
+        {:ok, param} -> param
+        :error -> resolve_from_intervention(orchid_key, interventions)
       end
     end)
   end
