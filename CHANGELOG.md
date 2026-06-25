@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.3.0 (2026-06-25)
+
+### Changed
+
+- Renamed `:plugins` option to `:orchid_adapters`, simplified to function-only form.
+  Module-based adapter dispatch removed — use Orchid hooks for step-level concerns.
+- Moved `:interventions` from Config to Drafting. Config is now purely immutable
+  dispatch configuration; Drafting holds per-dispatch mutable state.
+- `:interventions` keys now accept both `{:port, node, port}` tuples (auto-converted
+  via `PortRef.to_orchid_key/1`) and raw orchid_key strings.
+- `merge_results/2` simplified — dead `%Orchid.Param{}` branch removed.
+
+### Removed
+
+- `:hooks` lifecycle callbacks from Config. Oi intentionally defers step-level
+  concerns to Orchid's hook system via `:orchid_opts`.
+- `resolve_from_intervention/2` in Worker. Intervention injection now happens at
+  Drafting construction time, not per-bundle.
+
+### Fixed
+
+- Intervention priority: interventions now override drafting memory (were previously
+  ignored when a drafting key already existed).
+
 ## v0.2.0
 
 ### Breaking
