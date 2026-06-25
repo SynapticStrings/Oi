@@ -39,8 +39,10 @@ defmodule Oi do
 
   ## Options
 
-    * `:inputs` — map of external io_key => payload, seeded into drafting memory
-    * `:interventions` — map of `{:port, node, port} => {type, payload}`
+    * `:inputs` — map of io_key => payload, seeded into drafting as initial memory
+    * `:interventions` — map of `{:port, node, port} => {type, payload}`.
+      Types: `:override`, `:offset`, `:custom` etc. Resolved per-bundle by Worker.
+      Note: interventions are NOT for external inputs — use `:inputs` for that.
     * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or `Oi.Executor.Pool`
     * `:executor_opts` — passed to the executor (e.g. `[sup: MyTaskSup]`)
     * `:plugins` — OrchidPlugin pipeline

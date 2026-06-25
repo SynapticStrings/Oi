@@ -47,13 +47,11 @@ defmodule Oi.SymbiontSmokeTest do
 
       {:ok, compiled} = Oi.compile(graph)
 
-      interventions = %{
-        {:port, :pred_step, :text} => {:input, "hello"}
-      }
+      inputs = %{"pred_step|text" => "hello"}
 
       {:ok, result} =
         Oi.execute(compiled,
-          interventions: interventions,
+          inputs: inputs,
           executor: Oi.Executor.Sync,
           orchid_baggage: %{scope_id: "sym-e2e"},
           orchid_opts: [

@@ -37,16 +37,9 @@ defmodule Oi.Dispatch.Orchestrator do
   end
 
   defp merge_results(%Drafting{} = drafting, outputs) do
-    entries =
-      outputs
-      |> Enum.map(fn
-        %Orchid.Param{} = p -> {p.name, p}
-        {port_name, p} -> {port_name, p}
-      end)
-      # TODO: reconsider nil filtering after restructure
-      # |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-      |> Map.new()
-
-    Drafting.put(drafting, entries)
+    outputs
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
+    |> then(&Drafting.put(drafting, &1))
   end
 end

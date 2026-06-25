@@ -22,7 +22,7 @@ defmodule Oi.Dispatch.Worker do
       |> Map.new(fn {k, v} -> {PortRef.to_orchid_key(k), v} end)
 
     with {:ok, dynamic_inputs} <-
-           resolve_dependencies(bundle, drafting, intervention_by_orchid_key) do
+           resolve_dependencies(bundle, drafting) do
       baggage =
         conf.orchid_baggage
         |> Map.merge(%{interventions: intervention_by_orchid_key})
@@ -52,20 +52,14 @@ defmodule Oi.Dispatch.Worker do
 
   defp resolve_dependencies(
          %Bundle{inputs: inputs},
-         %Drafting{memory: mem},
-         interventions
+         %Drafting{memory: mem}
        ) do
     inputs
     |> Enum.reduce_while({:ok, []}, fn orchid_key, {:ok, acc} ->
-      cond do
-        Map.has_key?(mem, orchid_key) ->
-          {:cont, {:ok, [Map.fetch!(mem, orchid_key) | acc]}}
-
-        param = resolve_from_intervention(orchid_key, interventions) ->
-          {:cont, {:ok, [param | acc]}}
-
-        true ->
-          {:halt, {:error, {:missing_input, orchid_key}}}
+      if Map.has_key?(mem, orchid_key) do
+        {:cont, {:ok, [Map.fetch!(mem, orchid_key) | acc]}}
+      else
+        {:halt, {:error, {:missing_input, orchid_key}}}
       end
     end)
     |> case do
@@ -74,16 +68,4 @@ defmodule Oi.Dispatch.Worker do
     end
   end
 
-  defp resolve_from_intervention(orchid_key, interventions) do
-    case Map.get(interventions, orchid_key) do
-      {:input, %Orchid.Param{} = param} ->
-        %{param | name: orchid_key}
-
-      {:input, payload} ->
-        Orchid.Param.new(orchid_key, :any, payload)
-
-      nil ->
-        nil
-    end
-  end
 end

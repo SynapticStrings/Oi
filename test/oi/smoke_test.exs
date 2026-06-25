@@ -66,12 +66,9 @@ defmodule Oi.SmokeTest do
 
       {:ok, compiled} = Oi.compile(graph)
 
-      interventions = %{
-        {:port, :step1, :in} => {:input, "Foo"},
-        {:port, :step2, :in} => {:input, "Bar"}
-      }
+      inputs = %{"step1|in" => "Foo", "step2|in" => "Bar"}
 
-      {:ok, result} = Oi.execute(compiled, interventions: interventions, executor: Oi.Executor.Sync)
+      {:ok, result} = Oi.execute(compiled, inputs: inputs, executor: Oi.Executor.Sync)
 
       assert is_struct(result, Oi.Result)
       assert map_size(result.memory) > 0
@@ -97,18 +94,11 @@ defmodule Oi.SmokeTest do
 
       {:ok, compiled} = Oi.compile(graph)
 
-      interventions_a = %{
-        {:port, :step1, :in} => {:input, "A1"},
-        {:port, :step2, :in} => {:input, "A2"}
-      }
+      inputs_a = %{"step1|in" => "A1", "step2|in" => "A2"}
+      inputs_b = %{"step1|in" => "B1", "step2|in" => "B2"}
 
-      interventions_b = %{
-        {:port, :step1, :in} => {:input, "B1"},
-        {:port, :step2, :in} => {:input, "B2"}
-      }
-
-      {:ok, result_a} = Oi.execute(compiled, interventions: interventions_a)
-      {:ok, result_b} = Oi.execute(compiled, interventions: interventions_b)
+      {:ok, result_a} = Oi.execute(compiled, inputs: inputs_a)
+      {:ok, result_b} = Oi.execute(compiled, inputs: inputs_b)
 
       assert map_size(result_a.memory) > 0
       assert map_size(result_b.memory) > 0
