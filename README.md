@@ -13,7 +13,7 @@ Oi means Orchid integration — lightweight glue layer between
 
 - **Compile + Dispatch** — two-phase pipeline:
   1. `Oi.compile/1` — topology → static bundles (reusable)
-  2. `Oi.dispatch/2` — bind interventions → plan → execute via pluggable executor
+  2. `Oi.execute/2` — bind interventions → plan → execute via pluggable executor
 
 - **Executor** — pluggable task execution strategy.
   Built-in: `Sync` (serial), `TaskSup` (Task.Supervisor), `Pool` (NimblePool)(in future).
