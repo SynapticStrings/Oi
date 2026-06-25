@@ -16,4 +16,12 @@ defmodule Oi.Result do
 
   @spec fetch(t(), String.t()) :: {:ok, Orchid.Param.t()} | :error
   def fetch(%__MODULE__{memory: mem}, key), do: Map.fetch(mem, key)
+
+  @spec reify(t(), String.t()) :: {:ok, term()} | :error
+  def reify(%__MODULE__{} = res, key) do
+    case fetch(res, key) do
+      {:ok, %Orchid.Param{payload: payload}} -> {:ok, payload}
+      err -> err
+    end
+  end
 end

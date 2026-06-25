@@ -14,10 +14,11 @@ defmodule Oi do
   @type name :: String.t()
 
   alias Oi.{Compiler, Dispatcher, Configurator, Compiled, Result}
+  alias Oi.Topology.{Graph, Cluster}
   alias Oi.{Planning, Drafting}
 
   @doc """
-  Phase 1: Compile graph into static bundles + plan.
+  Compile graph into static bundles + plan.
 
   Pure topology — no interventions. Reusable across different
   intervention sets and inputs.
@@ -35,7 +36,7 @@ defmodule Oi do
   end
 
   @doc """
-  Phase 2: Execute compiled plan with inputs and interventions.
+  Execute compiled plan with inputs and interventions.
 
   ## Options
 
@@ -84,6 +85,21 @@ defmodule Oi do
 
       {:error, _} = err ->
         err
+    end
+  end
+
+  def run(struct, opts \\ [])
+
+  def run(%Compiled{} = compiled, opts) do
+    execute(compiled, opts)
+  end
+
+  def run(%Graph{} = graph, opts) do
+    cluster = Keyword.get(opts, :cluster, %Cluster{})
+    execute_opts = Keyword.delete(opts, :cluster)
+
+    with {:ok, compiled} <- compile(graph, cluster) do
+      execute(compiled, execute_opts)
     end
   end
 end

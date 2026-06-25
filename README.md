@@ -43,23 +43,24 @@ end
 ### Build and run
 
 ```elixir
-alias Oi.Topology.Graph
-alias Oi.Topology.Graph.{Node, Edge}
-
 graph =
   Graph.new()
   |> Graph.add_node(%Node{
-    id: :up, container: MyApp.Steps.Upcase,
-    inputs: [:text], outputs: [:result]
+    id: :up,
+    container: MyApp.Steps.Upcase,
+    inputs: [:text],
+    outputs: [:result]
   })
-
-ws = Oi.Workspace.new("demo", graph)
-{:ok, ws} = Oi.compile(ws)
-{:ok, ws} = Oi.dispatch(ws,
-  interventions: %{{:port, :up, :text} => {:input, "hello"}}
-)
-
-ws.drafting.memory  # => %{"up|result" => "HELLO"}
+ 
+{:ok, compiled} = Oi.compile(graph)
+ 
+{:ok, result} =
+  Oi.execute(compiled,
+    inputs: %{"up|text" => "hello"}
+  )
+ 
+{:ok, res} = Oi.Result.reify(result, "up|result")
+# => "HELLO"
 ```
 
 ### Multi-tenant with Session
