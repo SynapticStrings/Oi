@@ -48,7 +48,7 @@ defmodule Oi.MixProject do
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/SynapticStrings/Oi"},
       source_ref: @version,
-      files: ~w(lib .formatter.exs mix.exs README.md)
+      files: ~w(lib .formatter.exs mix.exs README.md CHANGELOG.md)
     ]
   end
 end
