@@ -13,22 +13,21 @@ defmodule Oi do
 
   @type name :: String.t()
 
-  alias Oi.Workspace
-  alias Oi.{Compiler, Dispatcher, Configurator}
-  alias Oi.Workspace.{Planning, Drafting}
+  alias Oi.{Compiler, Dispatcher, Configurator, Compiled, Result}
+  alias Oi.{Planning, Drafting}
 
   @doc """
   Phase 1: Compile graph into static bundles + plan.
 
-  Pure topology — no interventions. Result stored in `workspace.static_bundles`
-  and `workspace.plan`. Reusable across different intervention sets.
+  Pure topology — no interventions. Reusable across different
+  intervention sets and inputs.
   """
-  @spec compile(Workspace.t()) :: {:ok, Workspace.t()} | {:error, :cycle_detected}
-  def compile(%Workspace{} = ws) do
-    case Compiler.compile_graph(ws.graph, ws.cluster) do
+  @spec compile(Graph.t(), Cluster.t()) :: {:ok, Compiled.t()} | {:error, :cycle_detected}
+  def compile(graph, cluster \\ %Oi.Topology.Cluster{}) do
+    case Compiler.compile_graph(graph, cluster) do
       {:ok, bundles} ->
         {:ok, plan} = Planning.build(bundles)
-        {:ok, %{ws | static_bundles: bundles, plan: plan}}
+        {:ok, %Compiled{bundles: bundles, plan: plan}}
 
       {:error, _} = err ->
         err
@@ -36,15 +35,12 @@ defmodule Oi do
   end
 
   @doc """
-  Phase 2: Dispatch plan with interventions, filling `drafting`.
-
-  Interventions can be overridden via the `:interventions` option —
-  useful for A/B testing with the same compiled plan.
+  Phase 2: Execute compiled plan with inputs and interventions.
 
   ## Options
 
-    * `:interventions` — overrides `workspace.interventions` (default)
     * `:inputs` — map of external io_key => payload, seeded into drafting memory
+    * `:interventions` — map of `{:port, node, port} => {type, payload}`
     * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or `Oi.Executor.Pool`
     * `:executor_opts` — passed to the executor (e.g. `[sup: MyTaskSup]`)
     * `:plugins` — OrchidPlugin pipeline
@@ -53,44 +49,41 @@ defmodule Oi do
   ## Examples
 
       # Compile once
-      {:ok, ws} = Oi.compile(ws)
+      {:ok, compiled} = Oi.compile(graph, cluster)
 
-      # Dispatch with default interventions
-      {:ok, ws} = Oi.dispatch(ws)
+      # Execute with inputs + interventions
+      {:ok, result} = Oi.execute(compiled,
+        inputs: %{"step1|in" => "foo"},
+        interventions: %{{:port, :step1, :in} => {:override, "Bar"}}
+      )
 
-      # Dispatch with swapped interventions (reuses compiled plan)
-      {:ok, ws_b} = Oi.dispatch(ws, interventions: other_interventions)
+      # Same compiled plan, different inputs
+      {:ok, result_b} = Oi.execute(compiled, inputs: %{"step1|in" => "baz"})
 
       # With Task.Supervisor
-      {:ok, ws} = Oi.dispatch(ws,
+      {:ok, result} = Oi.execute(compiled,
         executor: Oi.Executor.TaskSup,
         executor_opts: [sup: Oi.Session.tasks_tuple("svs-1")]
       )
   """
-  @spec dispatch(Workspace.t(), keyword()) :: {:ok, Workspace.t()} | {:error, term()}
-  def dispatch(%Workspace{} = ws, opts \\ []) do
-    case ws.plan do
-      nil ->
-        {:error, :not_compiled}
+  @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
+  def execute(%Compiled{} = compiled, opts \\ []) do
+    inputs = Keyword.get(opts, :inputs, %{})
+    interventions = Keyword.get(opts, :interventions, %{})
 
-      %Planning.Plan{} ->
-        inputs = Keyword.get(opts, :inputs, %{})
-        interventions = Keyword.get(opts, :interventions, ws.interventions)
+    conf = Configurator.new(opts ++ [interventions: interventions])
 
-        conf = Configurator.new(opts ++ [interventions: interventions])
+    initial_memory =
+      Map.new(inputs, fn {k, v} -> {k, Orchid.Param.new(k, :any, v)} end)
 
-        initial_memory =
-          Map.new(inputs, fn {k, v} -> {k, Orchid.Param.new(k, :any, v)} end)
+    drafting = Drafting.new(initial_memory)
 
-        drafting = Drafting.new(initial_memory)
+    case Dispatcher.dispatch(compiled.plan, drafting, conf) do
+      {:ok, final_drafting} ->
+        {:ok, Result.new(final_drafting.memory)}
 
-        case Dispatcher.dispatch(ws.plan, drafting, conf) do
-          {:ok, final_drafting} ->
-            {:ok, %{ws | drafting: final_drafting}}
-
-          {:error, _} = err ->
-            err
-        end
+      {:error, _} = err ->
+        err
     end
   end
 end

@@ -8,7 +8,7 @@ defmodule Oi.Worker do
 
   alias Oi.Topology.Graph.PortRef
   alias Oi.Compiler.RecipeBundle
-  alias Oi.Workspace.Drafting
+  alias Oi.Drafting
   alias Oi.Configurator
 
   @type delta :: %{Drafting.io_key() => Orchid.Param.t()}

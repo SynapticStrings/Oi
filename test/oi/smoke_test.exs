@@ -2,7 +2,7 @@ defmodule Oi.SmokeTest do
   use ExUnit.Case
 
   import OiTest.GraphFactory
-  alias Oi.{Workspace, Compiler}
+  alias Oi.{Compiler, Compiled}
   alias Oi.Compiler.RecipeBundle
   alias Oi.Topology.{Graph, Cluster}
   alias Oi.Topology.Graph.{Node, Edge}
@@ -48,51 +48,54 @@ defmodule Oi.SmokeTest do
   end
 
   describe "Oi.compile (facade)" do
-    test "fills static_bundles and plan" do
+    test "produces Compiled with bundles and plan" do
       graph = build_finin_and_fanout_dag()
-      ws = Workspace.new("test-session", graph)
 
-      {:ok, ws} = Oi.compile(ws)
+      {:ok, compiled} = Oi.compile(graph)
 
-      assert ws.static_bundles != nil
-      assert length(ws.static_bundles) == 1
-      assert ws.plan != nil
-      assert ws.plan.total_tasks == 1
+      assert is_struct(compiled, Compiled)
+      assert length(compiled.bundles) == 1
+      assert compiled.plan != nil
+      assert compiled.plan.total_tasks == 1
     end
   end
 
-  describe "Oi.dispatch (end-to-end)" do
+  describe "Oi.execute (end-to-end)" do
     test "sync executor runs the full pipeline" do
       graph = build_finin_and_fanout_dag()
-      ws = Workspace.new("test-session", graph)
 
-      {:ok, ws} = Oi.compile(ws)
+      {:ok, compiled} = Oi.compile(graph)
 
       interventions = %{
         {:port, :step1, :in} => {:input, "Foo"},
         {:port, :step2, :in} => {:input, "Bar"}
       }
 
-      {:ok, ws} = Oi.dispatch(ws, interventions: interventions, executor: Oi.Executor.Sync)
+      {:ok, result} = Oi.execute(compiled, interventions: interventions, executor: Oi.Executor.Sync)
 
-      assert ws.drafting != nil
-      # Drafting should have outputs from step4
-      assert map_size(ws.drafting.memory) > 0
+      assert is_struct(result, Oi.Result)
+      assert map_size(result.memory) > 0
     end
 
-    test "dispatch without compile returns error" do
-      ws = Workspace.new("test-session", build_finin_and_fanout_dag())
+    test "execute with inputs instead of interventions" do
+      graph = build_finin_and_fanout_dag()
 
-      assert {:error, :not_compiled} = Oi.dispatch(ws)
+      {:ok, compiled} = Oi.compile(graph)
+
+      inputs = %{"step1|in" => "Foo", "step2|in" => "Bar"}
+
+      {:ok, result} = Oi.execute(compiled, inputs: inputs, executor: Oi.Executor.Sync)
+
+      assert is_struct(result, Oi.Result)
+      assert map_size(result.memory) > 0
     end
   end
 
-  describe "interventions A/B (reuse compiled plan)" do
-    test "same compiled workspace with different interventions" do
+  describe "reuse compiled plan with different interventions" do
+    test "same compiled with different interventions" do
       graph = build_finin_and_fanout_dag()
-      ws = Workspace.new("ab-test", graph)
 
-      {:ok, ws} = Oi.compile(ws)
+      {:ok, compiled} = Oi.compile(graph)
 
       interventions_a = %{
         {:port, :step1, :in} => {:input, "A1"},
@@ -104,16 +107,11 @@ defmodule Oi.SmokeTest do
         {:port, :step2, :in} => {:input, "B2"}
       }
 
-      {:ok, ws_a} = Oi.dispatch(ws, interventions: interventions_a)
-      {:ok, ws_b} = Oi.dispatch(ws, interventions: interventions_b)
+      {:ok, result_a} = Oi.execute(compiled, interventions: interventions_a)
+      {:ok, result_b} = Oi.execute(compiled, interventions: interventions_b)
 
-      # Both should produce results
-      assert ws_a.drafting != nil
-      assert ws_b.drafting != nil
-
-      # The static_bundles should be unchanged (reused)
-      assert ws.static_bundles == ws_a.static_bundles
-      assert ws.static_bundles == ws_b.static_bundles
+      assert map_size(result_a.memory) > 0
+      assert map_size(result_b.memory) > 0
     end
   end
 end

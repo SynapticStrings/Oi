@@ -1,4 +1,4 @@
-defmodule Oi.Workspace.Planning do
+defmodule Oi.Planning do
   @moduledoc """
   Execution plan built from compiled RecipeBundles.
 

@@ -1,4 +1,4 @@
-defmodule Oi.Workspace.Drafting do
+defmodule Oi.Drafting do
   @moduledoc """
   Temporary result store for a single dispatch pass.
   Holds computed outputs keyed by Orchid io_key (e.g. `"pred_step|result"`),

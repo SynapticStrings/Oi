@@ -1,7 +1,7 @@
 defmodule Oi.SymbiontSmokeTest do
   use ExUnit.Case
 
-  alias Oi.{Session, Workspace}
+  alias Oi.Session
   alias Oi.Topology.Graph
   alias Oi.Topology.Graph.Node
 
@@ -38,22 +38,21 @@ defmodule Oi.SymbiontSmokeTest do
     end
 
     # @tag :symbiont_dispatch
-    test "end-to-end symbiont dispatch in single session" do
+    test "end-to-end symbiont execute in single session" do
       {:ok, _} = Session.start("sym-e2e")
 
       register_predicter("sym-e2e")
 
       graph = build_predict_dag()
-      ws = Workspace.new("sym-e2e", graph)
 
-      {:ok, ws} = Oi.compile(ws)
+      {:ok, compiled} = Oi.compile(graph)
 
       interventions = %{
         {:port, :pred_step, :text} => {:input, "hello"}
       }
 
-      {:ok, ws} =
-        Oi.dispatch(ws,
+      {:ok, result} =
+        Oi.execute(compiled,
           interventions: interventions,
           executor: Oi.Executor.Sync,
           orchid_baggage: %{scope_id: "sym-e2e"},
@@ -62,11 +61,8 @@ defmodule Oi.SymbiontSmokeTest do
           ]
         )
 
-      # Check that drafting has outputs from the symbiont step
-      assert ws.drafting != nil
-      assert map_size(ws.drafting.memory) > 0
-
-      IO.inspect(ws.drafting.memory, label: "Drafting memory (symbiont)")
+      assert is_struct(result, Oi.Result)
+      assert map_size(result.memory) > 0
 
       Session.stop("sym-e2e")
     end

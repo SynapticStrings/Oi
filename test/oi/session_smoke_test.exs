@@ -1,7 +1,7 @@
 defmodule Oi.SessionSmokeTest do
   use ExUnit.Case
 
-  alias Oi.{Session, Workspace}
+  alias Oi.Session
   
   import OiTest.GraphFactory
 
@@ -51,27 +51,26 @@ defmodule Oi.SessionSmokeTest do
   end
 
   describe "Session with dispatch" do
-    test "dispatch via per-session TaskSup" do
+    test "execute via per-session TaskSup" do
       {:ok, _} = Session.start("dispatch-tenant")
       graph = build_finin_and_fanout_dag()
-      ws = Workspace.new("dispatch-tenant", graph)
 
-      {:ok, ws} = Oi.compile(ws)
+      {:ok, compiled} = Oi.compile(graph)
 
       interventions = %{
         {:port, :step1, :in} => {:input, "Foo"},
         {:port, :step2, :in} => {:input, "Bar"}
       }
 
-      {:ok, ws} =
-        Oi.dispatch(ws,
+      {:ok, result} =
+        Oi.execute(compiled,
           interventions: interventions,
           executor: Oi.Executor.TaskSup,
           executor_opts: [sup: Session.tasks_tuple("dispatch-tenant")]
         )
 
-      assert ws.drafting != nil
-      assert map_size(ws.drafting.memory) > 0
+      assert is_struct(result, Oi.Result)
+      assert map_size(result.memory) > 0
 
       Session.stop("dispatch-tenant")
     end
