@@ -19,7 +19,7 @@ defmodule Oi.Dispatch.Worker do
            resolve_dependencies(bundle, drafting) do
       base_opts = Keyword.merge(conf.orchid_opts, baggage: conf.orchid_baggage)
 
-      {recipe, final_opts} = Config.apply_plugins(conf, {bundle.recipe, base_opts})
+      {recipe, final_opts} = Config.apply_orchid_adapters(conf, {bundle.recipe, base_opts})
       run_orchid(recipe, dynamic_inputs, final_opts)
     end
   end

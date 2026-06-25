@@ -11,7 +11,7 @@ Oi means Orchid integration — lightweight glue layer between
 - **Graph → Compile → Execute** — three-phase pipeline:
   1. Build a `Graph` of step nodes and edges
   2. `Oi.compile(graph)` — topology → static `Compiled` (bundles + plan, reusable)
-  3. `Oi.execute(compiled, opts)` — resolve inputs, apply plugins, run via pluggable executor
+  3. `Oi.execute(compiled, opts)` — resolve inputs, apply orchid_adapters, run via pluggable executor
 
 - **Compiled** — immutable compilation product. Compile once, dispatch many times
   with different inputs / interventions / executors.
@@ -27,8 +27,9 @@ Oi means Orchid integration — lightweight glue layer between
 - **Session** — optional multi-tenant isolation via `Oi.Runtime.Session`,
   wrapping per-tenant `OrchidSymbiont.Runtime` + `Task.Supervisor`.
 
-- **Hooks** — lifecycle callbacks in Config: `on_error(reason, stage, drafting)`.
-  `before_dispatch`, `before_stage`, `after_stage` planned.
+- **Extension model** — Oi intentionally does not implement its own workflow
+  plugin system. Use Orchid hooks through `:orchid_opts` for step-level
+  concerns such as auth, logging, metrics, retry, and caching.
 
 ## Quick start
 
@@ -77,11 +78,15 @@ Oi.Result.reify(result, "up|result")
 ### With interventions
 
 ```elixir
+# Use vanilla orchid with custom opts(without orchid_adapters)
 {:ok, result} = Oi.execute(compiled,
   inputs: %{"step1|in" => "hello"},
   interventions: %{
     {:port, :step2, :in} => {:override, "forced_value"}
-  }
+  },
+  orchid_opts: [
+    global_hooks_stack: [Orchid.Hook.ApplyInterventions]
+  ]
 )
 ```
 
@@ -123,21 +128,6 @@ defmodule MyApp.Steps.Predict do
 end
 ```
 
-### Hooks (error telemetry)
-
-```elixir
-{:ok, result} = Oi.execute(compiled,
-  inputs: %{"step|in" => "data"},
-  hooks: %{
-    on_error: [
-      fn reason, stage, drafting ->
-        Logger.error("Stage #{stage.index} failed: #{inspect(reason)}")
-      end
-    ]
-  }
-)
-```
-
 <!-- MDOC -->
 
 ## Roadmap
@@ -147,7 +137,6 @@ end
 - [x] Multi-tenant Session
 - [x] Oi.Step macro DSL
 - [x] Interventions (via Orchid baggage)
-- [x] Lifecycle hooks (on_error)
 - [ ] Executor.Pool (NimblePool for GPU-intensive tasks)
 
 ## License

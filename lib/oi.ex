@@ -46,7 +46,7 @@ defmodule Oi do
       Note: interventions are NOT for external inputs — use `:inputs` for that.
     * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or `Oi.Executor.Pool`
     * `:executor_opts` — passed to the executor (e.g. `[sup: MyTaskSup]`)
-    * `:plugins` — OrchidPlugin pipeline
+    * `:orchid_adapters` — OrchidPlugin pipeline
     * `:orchid_baggage` — merged into Orchid run baggage
 
   ## Examples
