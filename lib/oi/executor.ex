@@ -12,7 +12,7 @@ defmodule Oi.Executor do
     * `Oi.Executor.Pool`       — `NimblePool` checkout (GPU-intensive tasks)
   """
 
-  @type task :: Oi.Compiler.Bundle.t()
+  @type task :: Oi.Compile.Bundle.t()
   @type result :: {:ok, map()} | {:error, term()}
   @type worker :: (task() -> result())
 

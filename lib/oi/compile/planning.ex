@@ -1,4 +1,4 @@
-defmodule Oi.Compiler.Planning do
+defmodule Oi.Compile.Planning do
   @moduledoc """
   Execution plan built from compiled Bundles.
 
@@ -7,7 +7,7 @@ defmodule Oi.Compiler.Planning do
   (barrier synchronization).
   """
 
-  alias Oi.Compiler.Bundle
+  alias Oi.Compile.Bundle
 
   defmodule Stage do
     @moduledoc """

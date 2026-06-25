@@ -13,9 +13,8 @@ defmodule Oi do
 
   @type name :: String.t()
 
-  alias Oi.{Compiler, Dispatch.Orchestrator, Dispatch.Config, Result}
+  alias Oi.{Drafting, Compile, Compiled, Dispatch.Orchestrator, Dispatch.Config, Result}
   alias Oi.Topology.{Graph, Cluster}
-  alias Oi.Drafting
 
   @doc """
   Compile graph into static bundles + plan.
@@ -23,11 +22,11 @@ defmodule Oi do
   Pure topology — no interventions. Reusable across different
   intervention sets and inputs.
   """
-  @spec compile(Graph.t(), Cluster.t()) :: {:ok, Compiler.Compiled.t()} | {:error, :cycle_detected}
+  @spec compile(Graph.t(), Cluster.t()) :: {:ok, Compiled.t()} | {:error, :cycle_detected}
   def compile(graph, cluster \\ %Oi.Topology.Cluster{}) do
-    with {:ok, bundles} <- Compiler.Bundle.compile_graph(graph, cluster),
-         {:ok, plan} <- Compiler.Planning.build(bundles) do
-      {:ok, %Compiler.Compiled{bundles: bundles, plan: plan}}
+    with {:ok, bundles} <- Compile.Bundle.compile_graph(graph, cluster),
+         {:ok, plan} <- Compile.Planning.build(bundles) do
+      {:ok, %Compiled{bundles: bundles, plan: plan}}
     else
       {:error, _} = err ->
         err
@@ -66,8 +65,8 @@ defmodule Oi do
         executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("svs-1")]
       )
   """
-  @spec execute(Compiler.Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
-  def execute(%Compiler.Compiled{} = compiled, opts \\ []) do
+  @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
+  def execute(%Compiled{} = compiled, opts \\ []) do
     inputs = Keyword.get(opts, :inputs, %{})
     interventions = Keyword.get(opts, :interventions, %{})
 
@@ -89,7 +88,7 @@ defmodule Oi do
 
   def run(struct, opts \\ [])
 
-  def run(%Compiler.Compiled{} = compiled, opts) do
+  def run(%Compiled{} = compiled, opts) do
     execute(compiled, opts)
   end
 

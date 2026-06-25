@@ -6,7 +6,7 @@ defmodule Oi.Dispatch.Orchestrator do
   enforces barrier before next stage. Results are merged into the drafting.
   """
 
-  alias Oi.{Compiler.Planning, Drafting}
+  alias Oi.{Compile.Planning, Drafting}
   alias Oi.Dispatch.Config
 
   @spec dispatch(Planning.Plan.t(), Drafting.t(), Config.t()) ::

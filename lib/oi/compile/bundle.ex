@@ -1,8 +1,8 @@
-defmodule Oi.Compiler.Bundle do
+defmodule Oi.Compile.Bundle do
   @moduledoc """
   Container for a compiled Orchid recipe and its associated metadata.
 
-  A Bundle is the static output of `Oi.Compiler.compile_graph/2` — it pairs
+  A Bundle is the static output of `Oi.Compile.compile_graph/2` — it pairs
   an `Orchid.Recipe` with the boundary information (requires/exports) and
   the interventions bound to the nodes within this cluster.
   """

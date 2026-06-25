@@ -1,7 +1,4 @@
-defmodule Oi.Compiler do
-  @moduledoc false
-
-  defmodule Compiled do
+defmodule Oi.Compiled do
   @moduledoc """
   Static compilation product: bundles + execution plan.
 
@@ -9,8 +6,8 @@ defmodule Oi.Compiler do
   calls with different inputs/interventions.
   """
 
-  alias Oi.Compiler.Bundle
-  alias Oi.Compiler.Planning
+  alias Oi.Compile.Bundle
+  alias Oi.Compile.Planning
 
   @type t :: %__MODULE__{
           bundles: [Bundle.t()],
@@ -18,5 +15,4 @@ defmodule Oi.Compiler do
         }
 
   defstruct [:bundles, :plan]
-end
 end

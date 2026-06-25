@@ -7,7 +7,7 @@ defmodule Oi.Worker do
   """
 
   alias Oi.Topology.Graph.PortRef
-  alias Oi.Compiler.Bundle
+  alias Oi.Compile.Bundle
   alias Oi.Drafting
   alias Oi.Dispatch.Config
 
