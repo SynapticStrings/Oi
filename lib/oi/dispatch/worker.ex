@@ -7,24 +7,15 @@ defmodule Oi.Dispatch.Worker do
   """
 
   alias Oi.Compile.Bundle
-  alias Oi.Dispatch.Drafting
-  alias Oi.Dispatch.Config
+  alias Oi.Dispatch.{Drafting, Config, Options}
 
   @type delta :: %{Oi.Dispatch.Drafting.io_key() => Orchid.Param.t()}
 
   @spec run(Bundle.t(), Drafting.t(), Config.t()) ::
           {:ok, delta()} | {:error, term()}
   def run(%Bundle{} = bundle, %Drafting{} = drafting, %Config{} = conf) do
-    with {:ok, dynamic_inputs} <-
-           resolve_dependencies(bundle, drafting) do
-      base_opts =
-        conf.orchid_opts
-        |> Keyword.update(:baggage, %{interventions: drafting.interventions}, fn baggage ->
-          baggage
-          |> Enum.into(%{})
-          |> Map.put(:interventions, drafting.interventions)
-        end)
-
+    with {:ok, dynamic_inputs} <- resolve_dependencies(bundle, drafting) do
+      base_opts = Options.assemble_run_opts(conf.orchid_opts, conf, drafting)
       {recipe, final_opts} = Config.apply_orchid_adapters(conf, {bundle.recipe, base_opts})
       run_orchid(recipe, dynamic_inputs, final_opts)
     end

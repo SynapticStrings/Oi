@@ -17,7 +17,7 @@
   Oi.execute(compiled, data: %{{:step1, :in} => "foo"})
   ```
 
-- `Oi.resolve_data/2` — public function for splitting unified data into memory/intervention
+- `Oi.Dispatch.Options.resolve_data/2` — splits unified data into memory/intervention
   maps based on graph topology (edge presence).
 - `Compiled` struct now carries `edges: MapSet.t(Edge.t())` for downstream port resolution.
 - Intervention type wrappers (`{:override, v}`, `{:offset, v}`, `{:custom, v}`) preserved

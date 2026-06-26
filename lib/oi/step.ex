@@ -1,7 +1,8 @@
 defmodule Oi.Step do
   @moduledoc """
-  轻量级声明式语法层，在 `Orchid.Step` / `OrchidSymbiont.Step` 之上提供简易
-  API，并产出 `__node_spec__/0` 供 topology 集成。
+  Lightweight declarative syntax layer on top of `Orchid.Step` /
+  `OrchidSymbiont.Step`. Provides a simple API and exposes
+  `__node_spec__/0` for topology integration.
 
   ## Pure step
 

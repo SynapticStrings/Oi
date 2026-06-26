@@ -71,6 +71,40 @@ defmodule Oi.Dispatch.Options do
 
   # 2. ---- Orchid options management ----
 
+  @doc """
+  Assemble the keyword list passed to `Orchid.run/3`.
+
+  Merges interventions from Drafting, user baggage from Config, computes
+  `scope_id`, and ensures `OrchidSymbiont.Hooks.Injector` is in the hook
+  stack (exactly once).
+  """
+  @spec assemble_run_opts(keyword(), Oi.Dispatch.Config.t(), Oi.Dispatch.Drafting.t()) ::
+          keyword()
+  def assemble_run_opts(opts, conf, drafting) do
+    {old_hooks, opts_no_hooks} = Keyword.pop(opts, :global_hooks_stack, [])
+    {old_baggage, opts_clean} = Keyword.pop(opts_no_hooks, :baggage, %{})
+
+    hooks_stack =
+      old_hooks
+      |> Kernel.++([OrchidSymbiont.Hooks.Injector])
+      |> Enum.uniq()
+
+    merged_baggage =
+      old_baggage
+      |> Map.put(:interventions, drafting.interventions)
+      |> Map.merge(conf.orchid_baggage)
+      |> Map.put_new(:symbiont_mapper, Map.get(conf.orchid_baggage, :symbiont_mapper, %{}))
+      |> maybe_put_scope_id(conf)
+
+    opts_clean ++
+      [baggage: merged_baggage, global_hooks_stack: hooks_stack]
+  end
+
+  defp maybe_put_scope_id(baggage, conf) do
+    scope_id = conf.name || Map.get(baggage, :scope_id)
+    if scope_id, do: Map.put(baggage, :scope_id, scope_id), else: baggage
+  end
+
   # ---- Helpers ----
 
   defp flatten_data(data) do

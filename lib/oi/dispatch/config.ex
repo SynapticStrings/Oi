@@ -10,7 +10,7 @@ defmodule Oi.Dispatch.Config do
 
     * `:executor`       — module implementing `Oi.Executor` (default: `Oi.Executor.Sync`)
     * `:executor_opts`  — keyword opts passed to executor's `run/3`
-    * `:orchid_adapters`        — ordered list of `{plugin, context}` tuples
+    * `:orchid_adapters`        — ordered list of `fn {recipe, opts}, conf -> {recipe, opts}` adapters
     * `:orchid_baggage` — map merged into every Orchid run's baggage
     * `:orchid_opts`    — extra keyword opts forwarded to `Orchid.run/3`
     * `:concurrency`    — fallback for executor if `:executor_opts` has none
@@ -21,8 +21,8 @@ defmodule Oi.Dispatch.Config do
           executor: module(),
           executor_opts: keyword(),
           orchid_adapters: [
-            {({Orchid.Recipe.t(), keyword(), context :: any()} ->
-                {Orchid.Recipe.t(), keyword()})}
+            ({Orchid.Recipe.t(), keyword()}, __MODULE__.t() ->
+                {Orchid.Recipe.t(), keyword()})
             | ({Orchid.Recipe.t(), keyword()} -> {Orchid.Recipe.t(), keyword()})
           ],
           orchid_baggage: map(),
@@ -56,13 +56,11 @@ defmodule Oi.Dispatch.Config do
     timeout = Keyword.get(opts, :timeout, :infinity)
     executor_opts = Keyword.put_new(executor_opts, :timeout, timeout)
 
-    # TODO
-    # Add default orchid_adapter
     %__MODULE__{
       name: name,
       executor: executor,
       executor_opts: executor_opts,
-      orchid_adapters: Keyword.get(opts, :orchid_adapters, []) ++ [&attach_orchid/2],
+      orchid_adapters: Keyword.get(opts, :orchid_adapters, []),
       orchid_baggage: opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{}),
       orchid_opts: Keyword.get(opts, :orchid_opts, []),
       concurrency: concurrency,
@@ -86,22 +84,5 @@ defmodule Oi.Dispatch.Config do
           plugin_func.(acc)
       end
     end)
-  end
-
-  defp attach_orchid({recipe, old_opts}, %__MODULE__{} = conf) do
-    # Symbionts related.
-    baggage = conf.orchid_baggage
-
-    # Orchid options.
-    {old_hooks_stack, old_orchid_opts_without_hooks} =
-      Keyword.pop(old_opts, :global_hooks_stack, [])
-
-    new_options = old_orchid_opts_without_hooks ++
-      [
-        baggage: Map.merge(baggage, %{symbiont_mapper: Map.get(baggage, :symbiont_mapper, %{}), scope_id: conf.name}),
-        global_hooks_stack: old_hooks_stack ++ [OrchidSymbiont.Hooks.Injector]
-      ]
-
-    {recipe, new_options}
   end
 end

@@ -124,8 +124,7 @@ graph = build_graph()
   data: %{step: %{in: "data"}},
   executor: Oi.Executor.TaskSup,
   executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("tenant-1")],
-  orchid_baggage: %{scope_id: "tenant-1"},
-  orchid_opts: [global_hooks_stack: [OrchidSymbiont.Hooks.Injector]]
+  orchid_baggage: %{scope_id: "tenant-1"}
 )
 
 Oi.Runtime.Session.stop("tenant-1")

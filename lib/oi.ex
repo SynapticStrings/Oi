@@ -51,13 +51,6 @@ defmodule Oi do
   Values pass through as-is. Wrapped values ({:override, v}, {:offset, v}, {:custom, v})
   are preserved for downstream intervention handling.
 
-  ## Legacy `:inputs` / `:interventions` (still supported)
-
-      Oi.execute(compiled,
-        inputs: %{"step1|in" => "foo"},
-        interventions: %{{:port, :step1, :in} => {:override, "Bar"}}
-      )
-
   ## Other options
 
     * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or `Oi.Executor.Pool`
