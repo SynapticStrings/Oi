@@ -8,7 +8,7 @@ defmodule Oi.Executor.TaskSup do
 
   @impl true
   def run(tasks, worker, opts) do
-    with {:ok, sup} <- Keyword.fetch!(opts, :sup) do
+    with {:ok, sup} <- Keyword.fetch(opts, :sup) do
       concurrency = Keyword.get(opts, :concurrency, System.schedulers_online())
       timeout = Keyword.get(opts, :timeout, :infinity)
 

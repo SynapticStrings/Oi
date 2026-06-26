@@ -52,4 +52,10 @@ defmodule Oi.Runtime.Session do
 
   @spec tasks_tuple(Oi.name()) :: Oi.Runtime.Registry.via_tuple()
   def tasks_tuple(oi), do: via(oi, :task_sup)
+
+  # ---- Symbiont related ----
+
+  # def register_symbiont(oi_name, ...)
+
+  # ---- Oi dispatch config related ----
 end
