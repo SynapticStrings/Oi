@@ -3,6 +3,7 @@ defmodule OiTest do
 
   alias Oi.Topology.Graph
   alias Oi.Topology.Graph.{Node, Edge}
+  alias Oi.Dispatch.Options
   import OiTest.GraphFactory
 
   # ── resolve_data/2 ──────────────────────────────────────
@@ -19,7 +20,7 @@ defmodule OiTest do
         {:step2, :in} => "B"
       }
 
-      {memory, interventions} = Oi.resolve_data(data, edges)
+      {memory, interventions} = Options.resolve_data(data, edges)
 
       assert memory == %{{:step1, :in} => "A", {:step2, :in} => "B"}
       assert interventions == %{}
@@ -32,7 +33,7 @@ defmodule OiTest do
         {:step4, :in} => {:offset, 42}
       }
 
-      {memory, interventions} = Oi.resolve_data(data, edges)
+      {memory, interventions} = Options.resolve_data(data, edges)
 
       assert memory == %{}
 
@@ -50,7 +51,7 @@ defmodule OiTest do
         {:step4, :out1} => {:custom, "final_override"}
       }
 
-      {memory, interventions} = Oi.resolve_data(data, edges)
+      {memory, interventions} = Options.resolve_data(data, edges)
 
       # step1.in: no incoming edge
       # step4.out1: no incoming edge (only outgoing from step4)
@@ -71,7 +72,7 @@ defmodule OiTest do
         {:step3, :in1} => {:override, "bar"}
       }
 
-      {memory, interventions} = Oi.resolve_data(data, edges)
+      {memory, interventions} = Options.resolve_data(data, edges)
 
       # memory value stays as 123 (not wrapped in Orchid.Param)
       assert memory[{:step1, :in}] == 123
@@ -80,7 +81,7 @@ defmodule OiTest do
     end
 
     test "empty data returns two empty maps", %{edges: edges} do
-      {memory, interventions} = Oi.resolve_data(%{}, edges)
+      {memory, interventions} = Options.resolve_data(%{}, edges)
       assert memory == %{}
       assert interventions == %{}
     end
@@ -99,7 +100,7 @@ defmodule OiTest do
         step3: %{in1: {:override, "bye"}}
       }
 
-      {memory, interventions} = Oi.resolve_data(data, edges)
+      {memory, interventions} = Options.resolve_data(data, edges)
 
       assert memory == %{{:step1, :in} => "hello", {:step2, :in} => "world"}
       assert interventions == %{{:step3, :in1} => {:override, "bye"}}
@@ -114,7 +115,7 @@ defmodule OiTest do
         }
       }
 
-      {memory, interventions} = Oi.resolve_data(data, edges)
+      {memory, interventions} = Options.resolve_data(data, edges)
 
       # in1, in2: have upstream edges → intervention
       # out: no incoming edge (only outgoing) → memory
@@ -137,7 +138,7 @@ defmodule OiTest do
 
       data = %{{:tgt, :in} => {:override, "gotcha"}}
 
-      {memory, interventions} = Oi.resolve_data(data, graph.edges)
+      {memory, interventions} = Options.resolve_data(data, graph.edges)
 
       # tgt.in has edge src.out → tgt.in → HAS upstream → intervention
       assert memory == %{}
@@ -153,7 +154,7 @@ defmodule OiTest do
 
       data = %{{:src, :out} => {:override, "nope"}}
 
-      {memory, interventions} = Oi.resolve_data(data, graph.edges)
+      {memory, interventions} = Options.resolve_data(data, graph.edges)
 
       # src.out only has outgoing edge (src.out → tgt.in), no incoming → memory
       assert memory == %{{:src, :out} => {:override, "nope"}}

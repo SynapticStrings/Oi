@@ -230,7 +230,7 @@ defmodule Oi.ComprehensiveSmokeTest do
       {:ok, result} =
         Oi.execute(compiled,
           data: %{step1: %{in: "A"}, step2: %{in: "B"}},
-          orchid_adapters: [{adapter, nil}]
+          orchid_adapters: [adapter]
         )
 
       assert map_size(result.memory) > 0
