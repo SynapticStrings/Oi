@@ -7,18 +7,18 @@ defmodule Oi.Result do
 alias Oi.Topology.Graph.PortRef
 
   @type t :: %__MODULE__{
-          memory: %{String.t() => Orchid.Param.t()}
+          memory: %{Orchid.Step.io_key() => Orchid.Param.t()}
         }
 
   defstruct [:memory]
 
-  @spec new(%{String.t() => Orchid.Param.t()}) :: t()
-  def new(memory), do: %__MODULE__{memory: memory}
+  @spec new(%{Orchid.Step.io_key() => Orchid.Param.t()}) :: t()
+  def new(memory) when is_map(memory), do: %__MODULE__{memory: memory}
 
-  @spec fetch(t(), String.t()) :: {:ok, Orchid.Param.t()} | :error
+  @spec fetch(t(), Orchid.Step.io_key()) :: {:ok, Orchid.Param.t()} | :error
   def fetch(%__MODULE__{memory: mem}, key), do: Map.fetch(mem, key)
 
-  @spec reify(t(), String.t()) :: {:ok, term()} | :error
+  @spec reify(t(), Orchid.Step.io_key()) :: {:ok, term()} | :error
   def reify(%__MODULE__{} = res, key) when is_binary(key) or is_atom(key) do
     case fetch(res, key) do
       {:ok, %Orchid.Param{payload: payload}} -> {:ok, payload}
