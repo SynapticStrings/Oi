@@ -4,7 +4,7 @@ defmodule Oi.Result do
 
   `memory` is keyed by Orchid io_key, values are `Orchid.Param.t()`.
   """
-alias Oi.Topology.Graph.PortRef
+  alias Oi.Topology.Graph.PortRef
 
   @type t :: %__MODULE__{
           memory: %{Orchid.Step.io_key() => Orchid.Param.t()}
