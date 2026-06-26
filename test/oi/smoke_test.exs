@@ -38,8 +38,18 @@ defmodule Oi.SmokeTest do
     test "cycle detected returns error" do
       graph =
         Graph.new()
-        |> Graph.add_node(%Node{id: :a, container: OiTest.DummyOrchidStep.DummyStep1, inputs: [:in], outputs: [:out]})
-        |> Graph.add_node(%Node{id: :b, container: OiTest.DummyOrchidStep.DummyStep1, inputs: [:in], outputs: [:out]})
+        |> Graph.add_node(%Node{
+          id: :a,
+          container: OiTest.DummyOrchidStep.DummyStep1,
+          inputs: [:in],
+          outputs: [:out]
+        })
+        |> Graph.add_node(%Node{
+          id: :b,
+          container: OiTest.DummyOrchidStep.DummyStep1,
+          inputs: [:in],
+          outputs: [:out]
+        })
         |> Graph.add_edge(Edge.new(:a, :out, :b, :in))
         |> Graph.add_edge(Edge.new(:b, :out, :a, :in))
 
@@ -66,22 +76,26 @@ defmodule Oi.SmokeTest do
 
       {:ok, compiled} = Oi.compile(graph)
 
-      inputs = %{"step1|in" => "Foo", "step2|in" => "Bar"}
-
-      {:ok, result} = Oi.execute(compiled, inputs: inputs, executor: Oi.Executor.Sync)
+      {:ok, result} =
+        Oi.execute(compiled,
+          data: %{step1: %{in: "Foo"}, step2: %{in: "Bar"}},
+          executor: Oi.Executor.Sync
+        )
 
       assert is_struct(result, Oi.Result)
       assert map_size(result.memory) > 0
     end
 
-    test "execute with inputs instead of interventions" do
+    test "execute with data instead of inputs" do
       graph = build_finin_and_fanout_dag()
 
       {:ok, compiled} = Oi.compile(graph)
 
-      inputs = %{"step1|in" => "Foo", "step2|in" => "Bar"}
-
-      {:ok, result} = Oi.execute(compiled, inputs: inputs, executor: Oi.Executor.Sync)
+      {:ok, result} =
+        Oi.execute(compiled,
+          data: %{step1: %{in: "Foo"}, step2: %{in: "Bar"}},
+          executor: Oi.Executor.Sync
+        )
 
       assert is_struct(result, Oi.Result)
       assert map_size(result.memory) > 0
@@ -89,16 +103,13 @@ defmodule Oi.SmokeTest do
   end
 
   describe "reuse compiled plan with different interventions" do
-    test "same compiled with different interventions" do
+    test "same compiled with different data" do
       graph = build_finin_and_fanout_dag()
 
       {:ok, compiled} = Oi.compile(graph)
 
-      inputs_a = %{"step1|in" => "A1", "step2|in" => "A2"}
-      inputs_b = %{"step1|in" => "B1", "step2|in" => "B2"}
-
-      {:ok, result_a} = Oi.execute(compiled, inputs: inputs_a)
-      {:ok, result_b} = Oi.execute(compiled, inputs: inputs_b)
+      {:ok, result_a} = Oi.execute(compiled, data: %{step1: %{in: "A1"}, step2: %{in: "A2"}})
+      {:ok, result_b} = Oi.execute(compiled, data: %{step1: %{in: "B1"}, step2: %{in: "B2"}})
 
       assert map_size(result_a.memory) > 0
       assert map_size(result_b.memory) > 0

@@ -16,7 +16,7 @@ defmodule Oi do
   alias Oi.{Compile, Compiled, Result}
   alias Oi.Dispatch.{Config, Drafting, Orchestrator}
   alias Oi.Topology.{Graph, Cluster}
-  alias Oi.Topology.Graph.PortRef
+  alias Oi.Topology.Graph.{Edge, PortRef, Node}
 
   @doc """
   Compile graph into static bundles + plan.
@@ -28,7 +28,7 @@ defmodule Oi do
   def compile(graph, cluster \\ %Oi.Topology.Cluster{}) do
     with {:ok, bundles} <- Compile.Bundle.compile_graph(graph, cluster),
          {:ok, plan} <- Compile.Planning.build(bundles) do
-      {:ok, %Compiled{bundles: bundles, plan: plan}}
+      {:ok, %Compiled{bundles: bundles, plan: plan, edges: graph.edges}}
     else
       {:error, _} = err ->
         err
@@ -38,55 +38,39 @@ defmodule Oi do
   @doc """
   Execute compiled plan with inputs and interventions.
 
-  ## Options
+  ## Unified `:data` format (recommended)
 
-    * `:inputs` — map of io_key => payload, seeded into drafting as initial memory
-    * `:interventions` — map of `{:port, node, port} => {type, payload}`.
-      Types: `:override`, `:offset`, `:custom` etc. Resolved per-bundle by Worker.
-      Note: interventions are NOT for external inputs — use `:inputs` for that.
-    * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or `Oi.Executor.Pool`
-    * `:executor_opts` — passed to the executor (e.g. `[sup: MyTaskSup]`)
-    * `:orchid_adapters` — OrchidPlugin pipeline
-    * `:orchid_baggage` — merged into Orchid run baggage
+      Oi.execute(compiled, data: %{
+        step1: %{in: "foo"},
+        step2: %{result: {:override, "bar"}}
+      })
 
-  ## Examples
+  Supports tuple-key format as well: `%{{:step, :port} => value}`.
 
-      # Compile once
-      {:ok, compiled} = Oi.compile(graph, cluster)
+  Ports with incoming edges → intervention; ports without → memory.
+  Values pass through as-is. Wrapped values ({:override, v}, {:offset, v}, {:custom, v})
+  are preserved for downstream intervention handling.
 
-      # Execute with inputs + interventions
-      {:ok, result} = Oi.execute(compiled,
+  ## Legacy `:inputs` / `:interventions` (still supported)
+
+      Oi.execute(compiled,
         inputs: %{"step1|in" => "foo"},
         interventions: %{{:port, :step1, :in} => {:override, "Bar"}}
       )
 
-      # Same compiled plan, different inputs
-      {:ok, result_b} = Oi.execute(compiled, inputs: %{"step1|in" => "baz"})
+  ## Other options
 
-      # With Task.Supervisor
-      {:ok, result} = Oi.execute(compiled,
-        executor: Oi.Executor.TaskSup,
-        executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("svs-1")]
-      )
+    * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or `Oi.Executor.Pool`
+    * `:executor_opts` — passed to the executor (e.g. `[sup: MyTaskSup]`)
+    * `:orchid_adapters` — OrchidPlugin pipeline
+    * `:orchid_baggage` — merged into Orchid run baggage
   """
   @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
   def execute(%Compiled{} = compiled, opts \\ []) do
-    inputs = Keyword.get(opts, :inputs, %{})
+    {initial_memory_io, interventions_io} = build_drafting_inputs(compiled, opts)
 
-    interventions =
-      opts
-      |> Keyword.get(:interventions, %{})
-      |> Map.new(fn
-        {{:port, node, port}, v} -> {PortRef.to_orchid_key({:port, node, port}), v}
-        {key, v} when is_binary(key) -> {key, v}
-      end)
-
+    drafting = Drafting.new(initial_memory_io, interventions_io)
     conf = prepare_config(opts)
-
-    initial_memory =
-      Map.new(inputs, fn {k, v} -> {k, Orchid.Param.new(k, :any, v)} end)
-
-    drafting = Drafting.new(initial_memory, interventions)
 
     case Orchestrator.dispatch(compiled.plan, drafting, conf) do
       {:ok, final_drafting} ->
@@ -112,13 +96,94 @@ defmodule Oi do
     end
   end
 
+  @typedoc """
+  Unified user-facing data for Oi.execute/2.
+
+  Replaces the separate `:inputs` / `:interventions` opts.
+
+  ## Format A — tuple keys
+      %{{:step1, :in} => "foo", {:step2, :result} => {:override, "bar"}}
+
+  ## Format B — nested
+      %{step1: %{in: "foo"}, step2: %{result: {:override, "bar"}}}
+  """
+  @type data ::
+          %{
+            optional({Node.id(), Node.node_port()}) => term()
+          }
+          | %{
+              optional(Node.id()) => %{
+                optional(Node.node_port()) => term()
+              }
+            }
+
+  @doc """
+  Splits unified `data` into `{memory, interventions}` by topology.
+
+  For each `{node, port}`:
+    * has incoming edge → intervention (data originates inside the graph)
+    * no incoming edge  → memory (external input, no upstream producer)
+
+  Values pass through as-is — no wrapping, no io_key conversion.
+  """
+  @spec resolve_data(data(), MapSet.t(Edge.t())) ::
+          {%{{Node.id(), Node.node_port()} => term()}, %{{Node.id(), Node.node_port()} => term()}}
+  def resolve_data(data, edges) when is_map(data) do
+    flat = flatten_data(data)
+
+    Enum.reduce(flat, {%{}, %{}}, fn {{node_id, port} = key, value}, {mem, intv} ->
+      if has_upstream?(edges, node_id, port) do
+        {mem, Map.put(intv, key, value)}
+      else
+        {Map.put(mem, key, value), intv}
+      end
+    end)
+  end
+
+  # -- helpers
+
+  defp flatten_data(data) do
+    if Enum.any?(data, fn {_k, v} -> is_map(v) end) do
+      for {node, ports} <- data, {port, val} <- ports, into: %{}, do: {{node, port}, val}
+    else
+      data
+    end
+  end
+
+  defp has_upstream?(edges, node_id, port) do
+    Enum.any?(edges, fn e -> e.to_node == node_id and e.to_port == port end)
+  end
+
+  defp build_drafting_inputs(%Compiled{edges: edges}, opts) do
+    data = Keyword.get(opts, :data, %{})
+
+    {memory_raw, interventions_raw} = resolve_data(data, edges)
+
+    memory_io =
+      Map.new(memory_raw, fn {{n, p}, v} ->
+        {PortRef.to_orchid_key({:port, n, p}),
+         wrap_orchid_param(PortRef.to_orchid_key({:port, n, p}), v)}
+      end)
+
+    interventions_io =
+      Map.new(interventions_raw, fn {{n, p}, v} ->
+        {PortRef.to_orchid_key({:port, n, p}),
+         wrap_orchid_param(PortRef.to_orchid_key({:port, n, p}), v)}
+      end)
+
+    {memory_io, interventions_io}
+  end
+
   defp prepare_config(opts) do
     baggage = opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{})
 
     Config.new(
       opts
-      |> Keyword.drop([:interventions, :orchid_baggage])
+      |> Keyword.drop([:interventions, :orchid_baggage, :data])
       |> Keyword.put(:orchid_baggage, baggage)
     )
   end
+
+  defp wrap_orchid_param(name, %Orchid.Param{} = p), do: %{p | name: name}
+  defp wrap_orchid_param(name, val), do: Orchid.Param.new(name, :any, val)
 end

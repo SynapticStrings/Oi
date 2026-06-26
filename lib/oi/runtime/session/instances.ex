@@ -3,7 +3,9 @@ defmodule Oi.Runtime.Session.Instances do
   use Supervisor
 
   def start_link(oi_name, opts) do
-    Supervisor.start_link(__MODULE__, {oi_name, opts}, name: Oi.Runtime.Session.instances_tuple(oi_name))
+    Supervisor.start_link(__MODULE__, {oi_name, opts},
+      name: Oi.Runtime.Session.instances_tuple(oi_name)
+    )
   end
 
   @impl true
@@ -11,7 +13,7 @@ defmodule Oi.Runtime.Session.Instances do
     children = [
       {OrchidSymbiont.Runtime,
        scope_id: oi_name, strict_mode: Keyword.get(opts, :orchid_symbiont_strict, false)},
-      {Task.Supervisor, name: Oi.Runtime.Session.tasks_tuple(oi_name)},
+      {Task.Supervisor, name: Oi.Runtime.Session.tasks_tuple(oi_name)}
     ]
 
     Supervisor.init(children, strategy: :one_for_all)

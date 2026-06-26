@@ -22,7 +22,7 @@ defmodule Oi.Dispatch.Config do
           executor_opts: keyword(),
           orchid_adapters: [
             {({Orchid.Recipe.t(), keyword(), context :: any()} ->
-                  {Orchid.Recipe.t(), keyword()})}
+                {Orchid.Recipe.t(), keyword()})}
             | ({Orchid.Recipe.t(), keyword()} -> {Orchid.Recipe.t(), keyword()})
           ],
           orchid_baggage: map(),
@@ -67,7 +67,8 @@ defmodule Oi.Dispatch.Config do
   Run every plugin in order over the `{recipe, run_opts}` tuple.
   Each plugin may rewrite the recipe or append to run_opts.
   """
-  @spec apply_orchid_adapters(t(), {Orchid.Recipe.t(), keyword()}) :: {Orchid.Recipe.t(), keyword()}
+  @spec apply_orchid_adapters(t(), {Orchid.Recipe.t(), keyword()}) ::
+          {Orchid.Recipe.t(), keyword()}
   def apply_orchid_adapters(%__MODULE__{orchid_adapters: orchid_adapters}, orchid_tuple) do
     Enum.reduce(orchid_adapters, orchid_tuple, fn plugin, acc ->
       case plugin do

@@ -11,15 +11,27 @@ Oi means Orchid integration — lightweight glue layer between
 - **Graph → Compile → Execute** — three-phase pipeline:
   1. Build a `Graph` of step nodes and edges
   2. `Oi.compile(graph)` — topology → static `Compiled` (bundles + plan, reusable)
-  3. `Oi.execute(compiled, opts)` — resolve inputs, apply orchid_adapters, run via pluggable executor
+  3. `Oi.execute(compiled, opts)` — resolve data, apply orchid_adapters, run via pluggable executor
 
 - **Compiled** — immutable compilation product. Compile once, dispatch many times
-  with different inputs / interventions / executors.
+  with different data / executors.
 
-- **Inputs vs Interventions** — two kinds of external data:
-  - `inputs:` — `%{"io_key" => payload}` seeded into drafting memory before dispatch
-  - `interventions:` — `%{{:port, node, port} => {type, payload}}` merged into
-    Orchid baggage, consumed by `Orchid.Hook.ApplyInterventions` per-step
+- **Data** — unified `data:` replaces the separate `inputs:` / `interventions:`.
+  Ports with **no incoming edge** → memory (external inputs).
+  Ports with **an incoming edge** → interventions (data originates inside the graph,
+  user is overriding it). Intervention types are declared via value wrappers
+  (`{:override, v}`, `{:offset, v}`, `{:custom, v}`). Plain values on intervention
+  ports are preserved as-is for downstream interpretation.
+
+  Two formats supported:
+
+  ```elixir
+  # Nested (recommended)
+  data: %{step1: %{in: "foo"}, step2: %{result: {:override, "bar"}}}
+
+  # Tuple keys
+  data: %{{:step1, :in} => "foo", {:step2, :result} => {:override, "bar"}}
+  ```
 
 - **Executor** — pluggable task fan-out per stage. Built-in: `Sync` (serial),
   `TaskSup` (Task.Supervisor). `Pool` (NimblePool) planned.
@@ -77,10 +89,10 @@ graph =
 {:ok, compiled} = Oi.compile(graph)
 
 {:ok, result} = Oi.execute(compiled,
-  inputs: %{"grind|beans" => 20, "brew|water" => 200}
+  data: %{grind: %{beans: 20}, brew: %{water: 200}}
 )
 
-{:ok, coffee} = Oi.Result.reify(result, "brew|coffee")
+{:ok, coffee} = Oi.Result.reify(result, {:brew, :coffee})
 IO.inspect(coffee)
 # => "Cup of latte"
 ```
@@ -88,11 +100,11 @@ IO.inspect(coffee)
 ### With interventions
 
 ```elixir
-# Use vanilla orchid with custom opts(without orchid_adapters)
+# Override an intermediate port — wrap the value with intervention type
 {:ok, result} = Oi.execute(compiled,
-  inputs: %{"step1|in" => "hello"},
-  interventions: %{
-    {:port, :step2, :in} => {:override, "forced_value"}
+  data: %{
+    step1: %{in: "hello"},
+    step2: %{in: {:override, "forced_value"}}   # step2.in has upstream edge → intervention
   },
   orchid_opts: [
     global_hooks_stack: [Orchid.Hook.ApplyInterventions]
@@ -109,7 +121,7 @@ graph = build_graph()
 {:ok, compiled} = Oi.compile(graph)
 
 {:ok, result} = Oi.execute(compiled,
-  inputs: %{"step|in" => "data"},
+  data: %{step: %{in: "data"}},
   executor: Oi.Executor.TaskSup,
   executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("tenant-1")],
   orchid_baggage: %{scope_id: "tenant-1"},

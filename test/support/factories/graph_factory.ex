@@ -28,7 +28,12 @@ defmodule OiTest.GraphFactory do
     |> add_node(%Node{id: :step1, container: S.DummyStep1, inputs: [:in], outputs: [:out]})
     |> add_node(%Node{id: :step2, container: S.DummyStep2, inputs: [:in], outputs: [:out]})
     |> add_node(%Node{id: :step3, container: S.DummyStep3, inputs: [:in1, :in2], outputs: [:out]})
-    |> add_node(%Node{id: :step4, container: S.DummyStep4, inputs: [:in], outputs: [:out1, :out2]})
+    |> add_node(%Node{
+      id: :step4,
+      container: S.DummyStep4,
+      inputs: [:in],
+      outputs: [:out1, :out2]
+    })
     |> add_edge(Edge.new(:step1, :out, :step3, :in1))
     |> add_edge(Edge.new(:step2, :out, :step3, :in2))
     |> add_edge(Edge.new(:step3, :out, :step4, :in))

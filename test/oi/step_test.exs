@@ -94,7 +94,6 @@ defmodule Oi.StepTest do
       ins = {%Orchid.Param{payload: 4}, %Orchid.Param{payload: 5}}
       assert {:ok, %Orchid.Param{payload: 20, name: :product}} = MultiTuple.run(ins, [])
     end
-
   end
 
   # ══════ __node_spec__ ═══════════════════════════════════
@@ -154,23 +153,27 @@ defmodule Oi.StepTest do
 
   describe "runtime helpers" do
     test "unwrap_list/1" do
-      result = Oi.Step.unwrap_list([
-        %Orchid.Param{payload: 1},
-        %Orchid.Param{payload: 2}
-      ])
+      result =
+        Oi.Step.unwrap_list([
+          %Orchid.Param{payload: 1},
+          %Orchid.Param{payload: 2}
+        ])
+
       assert result == [1, 2]
     end
 
     test "unwrap_tuple/1" do
-      result = Oi.Step.unwrap_tuple({
-        %Orchid.Param{payload: :a},
-        %Orchid.Param{payload: :b}
-      })
+      result =
+        Oi.Step.unwrap_tuple({
+          %Orchid.Param{payload: :a},
+          %Orchid.Param{payload: :b}
+        })
+
       assert result == {:a, :b}
     end
 
     test "wrap_multi/2 数量匹配" do
-      result = Oi.Step.wrap_multi([10, 3], [sum: :int, diff: :int])
+      result = Oi.Step.wrap_multi([10, 3], sum: :int, diff: :int)
       assert is_list(result)
       assert length(result) == 2
       assert Enum.at(result, 0).name == :sum
@@ -181,12 +184,12 @@ defmodule Oi.StepTest do
 
     test "wrap_multi/2 数量不匹配报错" do
       assert_raise ArgumentError, ~r/期望 2 个输出值/, fn ->
-        Oi.Step.wrap_multi([1], [a: :int, b: :int])
+        Oi.Step.wrap_multi([1], a: :int, b: :int)
       end
     end
 
     test "wrap_multi/2 支持 tuple 输入" do
-      result = Oi.Step.wrap_multi({10, 3}, [sum: :int, diff: :int])
+      result = Oi.Step.wrap_multi({10, 3}, sum: :int, diff: :int)
       assert length(result) == 2
     end
 

@@ -57,11 +57,9 @@ defmodule Oi.Runtime.SessionSmokeTest do
 
       {:ok, compiled} = Oi.compile(graph)
 
-      inputs = %{"step1|in" => "Foo", "step2|in" => "Bar"}
-
       {:ok, result} =
         Oi.execute(compiled,
-          inputs: inputs,
+          data: %{step1: %{in: "Foo"}, step2: %{in: "Bar"}},
           executor: Oi.Executor.TaskSup,
           executor_opts: [sup: Session.tasks_tuple("dispatch-tenant")]
         )

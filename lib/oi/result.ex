@@ -4,6 +4,7 @@ defmodule Oi.Result do
 
   `memory` is keyed by Orchid io_key, values are `Orchid.Param.t()`.
   """
+alias Oi.Topology.Graph.PortRef
 
   @type t :: %__MODULE__{
           memory: %{String.t() => Orchid.Param.t()}
@@ -18,10 +19,14 @@ defmodule Oi.Result do
   def fetch(%__MODULE__{memory: mem}, key), do: Map.fetch(mem, key)
 
   @spec reify(t(), String.t()) :: {:ok, term()} | :error
-  def reify(%__MODULE__{} = res, key) do
+  def reify(%__MODULE__{} = res, key) when is_binary(key) or is_atom(key) do
     case fetch(res, key) do
       {:ok, %Orchid.Param{payload: payload}} -> {:ok, payload}
       err -> err
     end
+  end
+
+  def reify(res, {node, port}) do
+    reify(res, PortRef.to_orchid_key({:port, node, port}))
   end
 end

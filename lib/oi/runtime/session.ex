@@ -5,7 +5,8 @@ defmodule Oi.Runtime.Session do
   """
   import Oi.Runtime.Registry
 
-  @spec start(Oi.name(), keyword()) :: :ignore | {:error, any()} | {:ok, pid()} | {:ok, pid(), any()}
+  @spec start(Oi.name(), keyword()) ::
+          :ignore | {:error, any()} | {:ok, pid()} | {:ok, pid(), any()}
   def start(oi_name, opts \\ []) do
     case Registry.lookup(Oi.Runtime.Registry, instances(oi_name)) do
       [{pid, _}] ->

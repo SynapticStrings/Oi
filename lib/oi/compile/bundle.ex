@@ -16,7 +16,7 @@ defmodule Oi.Compile.Bundle do
           requires: [Orchid.Step.io_key()],
           exports: [Orchid.Step.io_key()],
           inputs: [Orchid.Step.io_key()],
-          node_ids: [Graph.Node.id()],
+          node_ids: [Graph.Node.id()]
         }
 
   defstruct [
@@ -59,7 +59,7 @@ defmodule Oi.Compile.Bundle do
       |> Enum.map(&node_to_step(&1, graph))
 
     {requires, exports} = calculate_boundaries(node_ids, graph)
-    inputs = (requires -- exports)
+    inputs = requires -- exports
 
     %__MODULE__{
       recipe: Orchid.Recipe.new(steps),

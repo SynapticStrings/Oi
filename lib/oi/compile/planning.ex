@@ -68,7 +68,6 @@ defmodule Oi.Compile.Planning do
             case producers[key] do
               # external dependency
               nil -> []
-
               ids -> [ids]
             end
           end)

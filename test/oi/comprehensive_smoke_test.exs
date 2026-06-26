@@ -21,9 +21,7 @@ defmodule Oi.ComprehensiveSmokeTest do
         })
 
       {:ok, compiled} = Oi.compile(graph)
-      {:ok, result} = Oi.execute(compiled,
-        inputs: %{"greeter|name" => "World"}
-      )
+      {:ok, result} = Oi.execute(compiled, data: %{greeter: %{name: "World"}})
 
       assert {:ok, "Hello, World"} = Oi.Result.reify(result, "greeter|greeting")
     end
@@ -46,9 +44,7 @@ defmodule Oi.ComprehensiveSmokeTest do
         |> Graph.add_edge(Edge.new(:greeter, :greeting, :shouter, :text))
 
       {:ok, compiled} = Oi.compile(graph)
-      {:ok, result} = Oi.execute(compiled,
-        inputs: %{"greeter|name" => "Oi"}
-      )
+      {:ok, result} = Oi.execute(compiled, data: %{greeter: %{name: "Oi"}})
 
       assert {:ok, "Hello, Oi!"} = Oi.Result.reify(result, "shouter|shout")
     end
@@ -64,9 +60,7 @@ defmodule Oi.ComprehensiveSmokeTest do
         })
 
       {:ok, compiled} = Oi.compile(graph)
-      {:ok, result} = Oi.execute(compiled,
-        inputs: %{"calc|x" => 3, "calc|y" => 4}
-      )
+      {:ok, result} = Oi.execute(compiled, data: %{calc: %{x: 3, y: 4}})
 
       assert {:ok, 7} = Oi.Result.reify(result, "calc|sum")
       assert {:ok, 12} = Oi.Result.reify(result, "calc|product")
@@ -83,9 +77,7 @@ defmodule Oi.ComprehensiveSmokeTest do
         })
 
       {:ok, compiled} = Oi.compile(graph)
-      {:error, {:orchid_error, _, _}} = Oi.execute(compiled,
-        inputs: %{"bad|in" => "whatever"}
-      )
+      {:error, {:orchid_error, _, _}} = Oi.execute(compiled, data: %{bad: %{in: "whatever"}})
     end
   end
 
@@ -95,9 +87,14 @@ defmodule Oi.ComprehensiveSmokeTest do
     test "fetch returns {:ok, param} for existing key" do
       graph = build_finin_and_fanout_dag()
       {:ok, compiled} = Oi.compile(graph)
-      {:ok, result} = Oi.execute(compiled,
-        inputs: %{"step1|in" => "A", "step2|in" => "B"}
-      )
+
+      {:ok, result} =
+        Oi.execute(compiled,
+          data: %{
+            step1: %{in: "A"},
+            step2: %{in: "B"}
+          }
+        )
 
       assert {:ok, %Orchid.Param{}} = Oi.Result.fetch(result, "step4|out1")
     end
@@ -105,9 +102,14 @@ defmodule Oi.ComprehensiveSmokeTest do
     test "fetch returns :error for missing key" do
       graph = build_finin_and_fanout_dag()
       {:ok, compiled} = Oi.compile(graph)
-      {:ok, result} = Oi.execute(compiled,
-        inputs: %{"step1|in" => "A", "step2|in" => "B"}
-      )
+
+      {:ok, result} =
+        Oi.execute(compiled,
+          data: %{
+            step1: %{in: "A"},
+            step2: %{in: "B"}
+          }
+        )
 
       assert :error = Oi.Result.fetch(result, "nonexistent|key")
     end
@@ -115,9 +117,14 @@ defmodule Oi.ComprehensiveSmokeTest do
     test "reify returns :error for missing key" do
       graph = build_finin_and_fanout_dag()
       {:ok, compiled} = Oi.compile(graph)
-      {:ok, result} = Oi.execute(compiled,
-        inputs: %{"step1|in" => "A", "step2|in" => "B"}
-      )
+
+      {:ok, result} =
+        Oi.execute(compiled,
+          data: %{
+            step1: %{in: "A"},
+            step2: %{in: "B"}
+          }
+        )
 
       assert :error = Oi.Result.reify(result, "nonexistent|key")
     end
@@ -135,10 +142,11 @@ defmodule Oi.ComprehensiveSmokeTest do
     end
 
     test "new/2 seeds memory and interventions" do
-      d = Drafting.new(
-        %{"step|in" => Orchid.Param.new("step|in", :string, "data")},
-        %{"step|in" => {:override, "forced"}}
-      )
+      d =
+        Drafting.new(
+          %{"step|in" => Orchid.Param.new("step|in", :string, "data")},
+          %{"step|in" => {:override, "forced"}}
+        )
 
       assert {:ok, %Orchid.Param{payload: "data"}} = Drafting.fetch(d, "step|in")
       assert d.interventions == %{"step|in" => {:override, "forced"}}
@@ -161,11 +169,12 @@ defmodule Oi.ComprehensiveSmokeTest do
     end
 
     test "take returns subset of keys" do
-      d = Drafting.new(%{
-        "a" => Orchid.Param.new("a", :string, "1"),
-        "b" => Orchid.Param.new("b", :string, "2"),
-        "c" => Orchid.Param.new("c", :string, "3")
-      })
+      d =
+        Drafting.new(%{
+          "a" => Orchid.Param.new("a", :string, "1"),
+          "b" => Orchid.Param.new("b", :string, "2"),
+          "c" => Orchid.Param.new("c", :string, "3")
+        })
 
       subset = Drafting.take(d, ["a", "c", "missing"])
       assert map_size(subset) == 2
@@ -174,10 +183,11 @@ defmodule Oi.ComprehensiveSmokeTest do
     end
 
     test "resolve_many succeeds when all keys present" do
-      d = Drafting.new(%{
-        "a" => Orchid.Param.new("a", :string, "1"),
-        "b" => Orchid.Param.new("b", :string, "2")
-      })
+      d =
+        Drafting.new(%{
+          "a" => Orchid.Param.new("a", :string, "1"),
+          "b" => Orchid.Param.new("b", :string, "2")
+        })
 
       assert {:ok, resolved} = Drafting.resolve_many(d, ["a", "b"])
       assert map_size(resolved) == 2
@@ -196,13 +206,19 @@ defmodule Oi.ComprehensiveSmokeTest do
     test "passes through without adapters" do
       graph = build_finin_and_fanout_dag()
       {:ok, compiled} = Oi.compile(graph)
-      {:ok, _} = Oi.execute(compiled,
-        inputs: %{"step1|in" => "A", "step2|in" => "B"}
-      )
+
+      {:ok, _} =
+        Oi.execute(compiled,
+          data: %{
+            step1: %{in: "A"},
+            step2: %{in: "B"}
+          }
+        )
     end
 
     test "adapter can transform recipe before orchid run" do
       caller = self()
+
       adapter = fn {recipe, opts}, _ctx ->
         send(caller, {:adapter_ran, recipe.name})
         {recipe, Keyword.put(opts, :adapted, true)}
@@ -210,10 +226,12 @@ defmodule Oi.ComprehensiveSmokeTest do
 
       graph = build_finin_and_fanout_dag()
       {:ok, compiled} = Oi.compile(graph)
-      {:ok, result} = Oi.execute(compiled,
-        inputs: %{"step1|in" => "A", "step2|in" => "B"},
-        orchid_adapters: [{adapter, nil}]
-      )
+
+      {:ok, result} =
+        Oi.execute(compiled,
+          data: %{step1: %{in: "A"}, step2: %{in: "B"}},
+          orchid_adapters: [{adapter, nil}]
+        )
 
       assert map_size(result.memory) > 0
       assert_received {:adapter_ran, _name}
@@ -244,23 +262,27 @@ defmodule Oi.ComprehensiveSmokeTest do
       {:ok, compiled} = Oi.compile(graph)
 
       # Run in alpha session
-      {:ok, result_a} = Oi.execute(compiled,
-        inputs: %{"pred|feature" => "hello"},
-        executor: Oi.Executor.TaskSup,
-        executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("alpha")],
-        orchid_baggage: %{scope_id: "alpha"},
-        orchid_opts: [global_hooks_stack: [OrchidSymbiont.Hooks.Injector]]
-      )
+      {:ok, result_a} =
+        Oi.execute(compiled,
+          data: %{pred: %{feature: "hello"}},
+          executor: Oi.Executor.TaskSup,
+          executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("alpha")],
+          orchid_baggage: %{scope_id: "alpha"},
+          orchid_opts: [global_hooks_stack: [OrchidSymbiont.Hooks.Injector]]
+        )
+
       assert map_size(result_a.memory) > 0
 
       # Run in beta session
-      {:ok, result_b} = Oi.execute(compiled,
-        inputs: %{"pred|feature" => "world"},
-        executor: Oi.Executor.TaskSup,
-        executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("beta")],
-        orchid_baggage: %{scope_id: "beta"},
-        orchid_opts: [global_hooks_stack: [OrchidSymbiont.Hooks.Injector]]
-      )
+      {:ok, result_b} =
+        Oi.execute(compiled,
+          data: %{pred: %{feature: "world"}},
+          executor: Oi.Executor.TaskSup,
+          executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("beta")],
+          orchid_baggage: %{scope_id: "beta"},
+          orchid_opts: [global_hooks_stack: [OrchidSymbiont.Hooks.Injector]]
+        )
+
       assert map_size(result_b.memory) > 0
 
       Oi.Runtime.Session.stop("alpha")
@@ -282,13 +304,14 @@ defmodule Oi.ComprehensiveSmokeTest do
       {:ok, compiled} = Oi.compile(graph)
 
       # Forgot to register model — should fail at Orchid level
-      {:error, {:orchid_error, _, %Orchid.Error{}}} = Oi.execute(compiled,
-        inputs: %{"pred|feature" => "data"},
-        executor: Oi.Executor.TaskSup,
-        executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("isolated")],
-        orchid_baggage: %{scope_id: "isolated"},
-        orchid_opts: [global_hooks_stack: [OrchidSymbiont.Hooks.Injector]]
-      )
+      {:error, {:orchid_error, _, %Orchid.Error{}}} =
+        Oi.execute(compiled,
+          data: %{pred: %{feature: "data"}},
+          executor: Oi.Executor.TaskSup,
+          executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("isolated")],
+          orchid_baggage: %{scope_id: "isolated"},
+          orchid_opts: [global_hooks_stack: [OrchidSymbiont.Hooks.Injector]]
+        )
 
       Oi.Runtime.Session.stop("isolated")
     end
@@ -302,19 +325,24 @@ defmodule Oi.ComprehensiveSmokeTest do
       {:ok, compiled} = Oi.compile(graph)
 
       # Sync executor with input set A
-      {:ok, r1} = Oi.execute(compiled,
-        inputs: %{"step1|in" => "X", "step2|in" => "Y"},
-        executor: Oi.Executor.Sync
-      )
+      {:ok, r1} =
+        Oi.execute(compiled,
+          data: %{step1: %{in: "X"}, step2: %{in: "Y"}},
+          executor: Oi.Executor.Sync
+        )
+
       assert map_size(r1.memory) > 0
 
       # TaskSup executor with input set B
       {:ok, _} = Oi.Runtime.Session.start("reuse")
-      {:ok, r2} = Oi.execute(compiled,
-        inputs: %{"step1|in" => "P", "step2|in" => "Q"},
-        executor: Oi.Executor.TaskSup,
-        executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("reuse")]
-      )
+
+      {:ok, r2} =
+        Oi.execute(compiled,
+          data: %{step1: %{in: "P"}, step2: %{in: "Q"}},
+          executor: Oi.Executor.TaskSup,
+          executor_opts: [sup: Oi.Runtime.Session.tasks_tuple("reuse")]
+        )
+
       assert map_size(r2.memory) > 0
 
       Oi.Runtime.Session.stop("reuse")

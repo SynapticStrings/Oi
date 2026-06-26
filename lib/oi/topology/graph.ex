@@ -63,10 +63,11 @@ defmodule Oi.Topology.Graph do
 
     @spec to_orchid_key(t()) :: Orchid.Step.io_key()
     def to_orchid_key({:port, node, port}) do
-      node_part = case node do
-        node when is_atom(node) -> Atom.to_string(node)
-        node when is_binary(node) -> node
-      end
+      node_part =
+        case node do
+          node when is_atom(node) -> Atom.to_string(node)
+          node when is_binary(node) -> node
+        end
 
       node_part <> "|" <> parse_port(port)
     end

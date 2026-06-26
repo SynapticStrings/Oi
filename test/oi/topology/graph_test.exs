@@ -47,7 +47,8 @@ defmodule Oi.Topology.GraphTest do
   describe "Item operation" do
     test "add_node/2" do
       graph =
-        new() |> add_node(%Node{id: :node_1, container: DummyStep1, inputs: [:in], outputs: [:out]})
+        new()
+        |> add_node(%Node{id: :node_1, container: DummyStep1, inputs: [:in], outputs: [:out]})
 
       assert graph.nodes[:node_1].container == DummyStep1
     end
@@ -72,8 +73,16 @@ defmodule Oi.Topology.GraphTest do
       graph = remove_node(graph, :node_a)
 
       assert graph.nodes == %{
-        :node_b => %Node{id: :node_b, container: DummyStep2, inputs: [:mid], outputs: [:out], options: [], extra: %{}}
-      }
+               :node_b => %Node{
+                 id: :node_b,
+                 container: DummyStep2,
+                 inputs: [:mid],
+                 outputs: [:out],
+                 options: [],
+                 extra: %{}
+               }
+             }
+
       assert graph.edges == MapSet.new()
     end
 
@@ -87,7 +96,14 @@ defmodule Oi.Topology.GraphTest do
 
     test "update_node/2 with struct replacement" do
       graph = build_graph_v1()
-      graph = update_node(graph, :node_b, %Node{id: :node_b, container: DummyStep1, inputs: [:mid], outputs: [:out]})
+
+      graph =
+        update_node(graph, :node_b, %Node{
+          id: :node_b,
+          container: DummyStep1,
+          inputs: [:mid],
+          outputs: [:out]
+        })
 
       assert graph.nodes[:node_b].container == DummyStep1
     end
@@ -108,6 +124,7 @@ defmodule Oi.Topology.GraphTest do
 
     test "remove_edge/2" do
       edge = Edge.new(:a, :out, :b, :in)
+
       graph =
         new()
         |> add_node(%Node{id: :a, container: DummyStep1, inputs: [:in], outputs: [:out]})

@@ -8,11 +8,13 @@ defmodule Oi.Compiled do
 
   alias Oi.Compile.Bundle
   alias Oi.Compile.Planning
+  alias Oi.Topology.Graph.Edge
 
   @type t :: %__MODULE__{
           bundles: [Bundle.t()],
-          plan: Planning.Plan.t()
+          plan: Planning.Plan.t(),
+          edges: MapSet.t(Edge.t())
         }
 
-  defstruct [:bundles, :plan]
+  defstruct [:bundles, :plan, edges: MapSet.new()]
 end
