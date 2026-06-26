@@ -143,11 +143,20 @@ defmodule Oi do
   # -- helpers
 
   defp flatten_data(data) do
-    if Enum.any?(data, fn {_k, v} -> is_map(v) end) do
-      for {node, ports} <- data, {port, val} <- ports, into: %{}, do: {{node, port}, val}
-    else
+    cond do
+    Enum.all?(data, fn
+      {{_node, _port}, _value} -> true
+      _ -> false
+    end) ->
       data
-    end
+    true ->
+      for {node, ports} <- data,
+          is_map(ports),
+          {port, val} <- ports,
+          into: %{} do
+        {{node, port}, val}
+      end
+  end
   end
 
   defp has_upstream?(edges, node_id, port) do

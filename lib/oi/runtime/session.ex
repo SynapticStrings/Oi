@@ -22,11 +22,22 @@ defmodule Oi.Runtime.Session do
     end
   end
 
-  @spec stop(Oi.name()) :: :ok | {:error, :not_found | :session_not_found}
+  @spec stop(Oi.name()) :: :ok | {:error, :session_not_found}
   def stop(oi_name) do
-    case Registry.lookup(Oi.Runtime.Registry, instances(oi_name)) do
-      [{pid, _}] -> DynamicSupervisor.terminate_child(Oi.Runtime.SessionSupervisor, pid)
-      [] -> {:error, :session_not_found}
+    with [{pid, _}] <- Registry.lookup(Oi.Runtime.Registry, instances(oi_name)),
+         :ok <- DynamicSupervisor.terminate_child(Oi.Runtime.SessionSupervisor, pid) do
+      :ok
+    else
+      _ -> {:error, :session_not_found}
+    end
+  end
+
+  @spec ensure_start(binary(), keyword()) ::
+          :ignore | {:error, any()} | {:ok, pid()} | {:ok, pid(), any()}
+  def ensure_start(oi_name, opts) do
+    case start(oi_name, opts) do
+      {:error, {:already_started, pid}} -> {:ok, pid}
+      any -> any
     end
   end
 
@@ -39,6 +50,20 @@ defmodule Oi.Runtime.Session do
       [] -> {:error, :session_not_found}
     end
   end
+
+  # list/0
+
+  # info/1
+
+  # with_session/3
+  # Oi.Session.with_session("tenant-1", fn session ->
+  #   Oi.run(graph,
+  #     ...
+  #     )
+  # end, opts
+  # )
+
+  # ---- Helpers ----
 
   @spec instances(Oi.name()) :: Oi.Runtime.Registry.key()
   def instances(oi), do: key(oi, :instances)

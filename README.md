@@ -154,12 +154,10 @@ end
 
 ## Roadmap
 
-- [x] Graph compilation + staged dispatch
-- [x] Pluggable Executor (Sync / TaskSup)
-- [x] Multi-tenant Session
-- [x] Oi.Step macro DSL
-- [x] Interventions (via Orchid baggage)
+- [x] Basic
+- [ ] Add multi-tenant mechanism
 - [ ] Executor.Pool (NimblePool for GPU-intensive tasks)
+- [ ] Telemetry
 
 ## License
 
