@@ -107,6 +107,10 @@ defmodule Oi.Topology.Graph do
     }
   end
 
+  def add_node(%__MODULE__{} = graph, node) when is_map(node) do
+    add_node(graph, struct(Node, node))
+  end
+
   def remove_node(%__MODULE__{nodes: nodes} = graph, node_id) do
     case nodes[node_id] do
       nil ->

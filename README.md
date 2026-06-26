@@ -1,8 +1,8 @@
 # Oi
 
 Oi means Orchid integration — lightweight glue layer between
-[Orchid](https://github.com/SynapticStrings/Orchid) workflows and
-[OrchidSymbiont](https://github.com/SynapticStrings/orchid_symbiont) runtimes.
+[Orchid](https://hex.pm/packges/orchid) workflows and
+[OrchidSymbiont](https://hex.pm/packges/orchid_symbiont) runtimes.
 
 <!-- MDOC -->
 
@@ -33,19 +33,32 @@ Oi means Orchid integration — lightweight glue layer between
 
 ## Quick start
 
+Same example with [orchid](https://github.com/SynapticStrings/Orchid).
+
 ### Define a step
 
 ```elixir
-defmodule MyApp.Steps.Upcase do
-  use Oi.Step, name: :upcase
+defmodule Barista.Grind do
+  use Oi.Step, name: :grind
 
-  manifest(
-    inputs: [:text],
-    outputs: [result: :string]
-  )
+  manifest(inputs: [:beans], outputs: [powder: :solid])
 
-  routine text, _opts do
-    text |> String.upcase() |> ok()
+  routine beans_amount, opts do
+    IO.puts("⚙️  Grinding #{beans_amount}g beans...")
+    beans_amount * Keyword.get(opts, :ratio, 1) |> ok()
+  end
+end
+
+defmodule Barista.Brew do
+  use Oi.Step, name: :brew
+
+  manifest(inputs: [:powder, :water], outputs: [coffee: :liquid])
+
+  routine [powder_amount, water_amount], opts do
+    style = Keyword.get(opts, :style, :espresso)
+
+    IO.puts("💧 Brewing #{style} coffee with #{powder_amount}g powder and #{water_amount}ml water...")
+    ok("Cup of #{style}")
   end
 end
 ```
@@ -54,25 +67,23 @@ end
 
 ```elixir
 alias Oi.Topology.Graph
-alias Oi.Topology.Graph.Node
+alias Oi.Topology.Graph.Edge
 
 graph =
   Graph.new()
-  |> Graph.add_node(%Node{
-    id: :up,
-    container: MyApp.Steps.Upcase,
-    inputs: [:text],
-    outputs: [:result]
-  })
+  |> Graph.add_node(Barista.Grind.__node_spec__())
+  |> Graph.add_node(Barista.Brew.__node_spec__())
+  |> Graph.add_edge(Edge.new(:grind, :powder, :brew, :powder))
 
 {:ok, compiled} = Oi.compile(graph)
 
 {:ok, result} = Oi.execute(compiled,
-  inputs: %{"up|text" => "hello"}
+  inputs: %{"grind|beans" => 20, "brew|water" => 200}
 )
 
-Oi.Result.reify(result, "up|result")
-# => {:ok, "HELLO"}
+{:ok, coffee} = Oi.Result.reify(result, "brew|coffee")
+IO.inspect(coffee)
+# => "Cup of espresso"
 ```
 
 ### With interventions
