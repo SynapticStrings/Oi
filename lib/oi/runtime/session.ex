@@ -34,7 +34,7 @@ defmodule Oi.Runtime.Session do
 
   @spec ensure_start(binary(), keyword()) ::
           :ignore | {:error, any()} | {:ok, pid()} | {:ok, pid(), any()}
-  def ensure_start(oi_name, opts) do
+  def ensure_start(oi_name, opts \\ []) do
     case start(oi_name, opts) do
       {:error, {:already_started, pid}} -> {:ok, pid}
       any -> any
