@@ -66,14 +66,13 @@ end
 ### Build and run
 
 ```elixir
-alias Oi.Topology.Graph
-alias Oi.Topology.Graph.Edge
+import Oi.Flowgraph
 
 graph =
-  Graph.new()
-  |> Graph.add_node(Barista.Grind.__node_spec__())
-  |> Graph.add_node(Barista.Brew.__node_spec__())
-  |> Graph.add_edge(Edge.new(:grind, :powder, :brew, :powder))
+  new_flowchart()
+  |> add_step(Barista.Grind)
+  |> add_step(Barista.Brew, opts: [style: :latte])
+  |> connect({:grind, :powder}, {:brew, :powder})
 
 {:ok, compiled} = Oi.compile(graph)
 
@@ -83,7 +82,7 @@ graph =
 
 {:ok, coffee} = Oi.Result.reify(result, "brew|coffee")
 IO.inspect(coffee)
-# => "Cup of espresso"
+# => "Cup of latte"
 ```
 
 ### With interventions
