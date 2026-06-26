@@ -52,6 +52,8 @@ defmodule Oi.Dispatch.Config do
     timeout = Keyword.get(opts, :timeout, :infinity)
     executor_opts = Keyword.put_new(executor_opts, :timeout, timeout)
 
+    # TODO
+    # Add default orchid_adapter
     %__MODULE__{
       executor: executor,
       executor_opts: executor_opts,

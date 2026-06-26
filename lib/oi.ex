@@ -174,6 +174,8 @@ defmodule Oi do
     {memory_io, interventions_io}
   end
 
+  # TODO
+  # Add automatic oi_name => Orchid.Symbiont scope_id inject.
   defp prepare_config(opts) do
     baggage = opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{})
 

@@ -31,8 +31,7 @@ defmodule Oi.Runtime.Session do
   end
 
   # TODO
-  # 这里的 resolve 应该是定位到 container 那个进程上去
-  # 后面再改吧
+  # 确定要 resolve 谁
   @spec resolve(Oi.name()) :: {:error, :session_not_found} | {:ok, pid()}
   def resolve(oi_name) do
     case Registry.lookup(Oi.Runtime.Registry, instances(oi_name)) do
