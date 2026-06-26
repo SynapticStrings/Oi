@@ -6,8 +6,7 @@ defmodule Oi.Compiled do
   calls with different inputs/interventions.
   """
 
-  alias Oi.Compile.Bundle
-  alias Oi.Compile.Planning
+  alias Oi.Compile.{Bundle, Planning}
   alias Oi.Topology.Graph.Edge
 
   @type t :: %__MODULE__{
