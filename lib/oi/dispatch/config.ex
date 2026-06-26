@@ -28,7 +28,8 @@ defmodule Oi.Dispatch.Config do
           orchid_baggage: map(),
           orchid_opts: keyword(),
           concurrency: pos_integer(),
-          timeout: timeout()
+          timeout: timeout(),
+          name: Oi.name() | nil
         }
 
   defstruct executor: Oi.Executor.Sync,
@@ -37,7 +38,8 @@ defmodule Oi.Dispatch.Config do
             orchid_baggage: %{},
             orchid_opts: [],
             concurrency: System.schedulers_online(),
-            timeout: :infinity
+            timeout: :infinity,
+            name: nil
 
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
