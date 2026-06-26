@@ -91,8 +91,13 @@ defmodule Oi.Dispatch.Options do
 
     merged_baggage =
       old_baggage
-      |> Map.put(:interventions, drafting.interventions)
+      |> case do
+        nil -> %{}
+        m when is_map(m) -> m
+        k when is_list(k) -> Enum.into(k, %{})
+      end
       |> Map.merge(conf.orchid_baggage)
+      |> Map.put(:interventions, drafting.interventions)
       |> Map.put_new(:symbiont_mapper, Map.get(conf.orchid_baggage, :symbiont_mapper, %{}))
       |> maybe_put_scope_id(conf)
 

@@ -25,15 +25,22 @@ defmodule Oi.Dispatch.Orchestrator do
       Oi.Dispatch.Worker.run(bundle, drafting, conf)
     end
 
-    stage.tasks
-    |> conf.executor.run(worker_fn, conf.executor_opts)
-    |> Enum.reduce_while({:ok, drafting}, fn
-      {:ok, outputs}, {:ok, acc} ->
-        {:cont, {:ok, merge_results(acc, outputs)}}
+    case conf.executor.run(stage.tasks, worker_fn, conf.executor_opts) do
+      {:error, _} = err ->
+        err
 
-      {:error, _} = err, _acc ->
-        {:halt, err}
-    end)
+      results when is_list(results) ->
+        Enum.reduce_while(results, {:ok, drafting}, fn
+          {:ok, outputs}, {:ok, acc} ->
+            {:cont, {:ok, merge_results(acc, outputs)}}
+
+          {:error, _} = err, _acc ->
+            {:halt, err}
+        end)
+
+      other ->
+        {:error, {:bad_executor_return, conf.executor, other}}
+    end
   end
 
   defp merge_results(%Drafting{} = drafting, outputs) do

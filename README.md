@@ -154,7 +154,7 @@ end
 ## Roadmap
 
 - [x] Basic
-- [ ] Add multi-tenant mechanism
+- [x] Basic multi-tenant Session runtime
 - [ ] Executor.Pool (NimblePool for GPU-intensive tasks)
 - [ ] Telemetry
 
