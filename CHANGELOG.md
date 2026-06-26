@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.4.0 (2026-06-26)
+
+### Update
+
+- **Unified `:data` option** — replaces separate `:inputs`/`:interventions` with a single
+  `data:` map. Ports are auto-split by topology: no incoming edge → memory, has incoming
+  edge → intervention. Legacy `:inputs` / `:interventions` options deprecated. Now two
+  formats supported:
+
+  ```elixir
+  # Nested (recommended)
+  Oi.execute(compiled, data: %{step1: %{in: "foo"}, step2: %{result: {:override, "bar"}}})
+
+  # Tuple keys
+  Oi.execute(compiled, data: %{{:step1, :in} => "foo"})
+  ```
+
+- `Oi.resolve_data/2` — public function for splitting unified data into memory/intervention
+  maps based on graph topology (edge presence).
+- `Compiled` struct now carries `edges: MapSet.t(Edge.t())` for downstream port resolution.
+- Intervention type wrappers (`{:override, v}`, `{:offset, v}`, `{:custom, v}`) preserved
+  as-is through the pipeline.
+
+### Fixed
+
+- `Oi.Executor.TaskSup`: `Keyword.fetch!` → `Keyword.fetch` (via-tuple pattern match was
+  always failing, causing all TaskSup-backed sessions to crash).
+
 ## v0.3.0 (2026-06-25)
 
 ### Changed
