@@ -43,6 +43,8 @@ defmodule Oi.Dispatch.Config do
 
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
+    name = Keyword.get(opts, :name)
+
     executor = Keyword.get(opts, :executor, Oi.Executor.Sync)
     executor_opts = Keyword.get(opts, :executor_opts, [])
 
@@ -57,9 +59,10 @@ defmodule Oi.Dispatch.Config do
     # TODO
     # Add default orchid_adapter
     %__MODULE__{
+      name: name,
       executor: executor,
       executor_opts: executor_opts,
-      orchid_adapters: Keyword.get(opts, :orchid_adapters, []),
+      orchid_adapters: Keyword.get(opts, :orchid_adapters, []) ++ [&attach_orchid/2],
       orchid_baggage: opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{}),
       orchid_opts: Keyword.get(opts, :orchid_opts, []),
       concurrency: concurrency,
@@ -73,15 +76,32 @@ defmodule Oi.Dispatch.Config do
   """
   @spec apply_orchid_adapters(t(), {Orchid.Recipe.t(), keyword()}) ::
           {Orchid.Recipe.t(), keyword()}
-  def apply_orchid_adapters(%__MODULE__{orchid_adapters: orchid_adapters}, orchid_tuple) do
+  def apply_orchid_adapters(%__MODULE__{orchid_adapters: orchid_adapters} = conf, orchid_tuple) do
     Enum.reduce(orchid_adapters, orchid_tuple, fn plugin, acc ->
       case plugin do
-        {plugin_func, context} when is_function(plugin_func, 2) ->
-          plugin_func.(acc, context)
+        plugin_func when is_function(plugin_func, 2) ->
+          plugin_func.(acc, conf)
 
         plugin_func when is_function(plugin_func, 1) ->
           plugin_func.(acc)
       end
     end)
+  end
+
+  defp attach_orchid({recipe, old_opts}, %__MODULE__{} = conf) do
+    # Symbionts related.
+    baggage = conf.orchid_baggage
+
+    # Orchid options.
+    {old_hooks_stack, old_orchid_opts_without_hooks} =
+      Keyword.pop(old_opts, :global_hooks_stack, [])
+
+    new_options = old_orchid_opts_without_hooks ++
+      [
+        baggage: Map.merge(baggage, %{symbiont_mapper: Map.get(baggage, :symbiont_mapper, %{}), scope_id: conf.name}),
+        global_hooks_stack: old_hooks_stack ++ [OrchidSymbiont.Hooks.Injector]
+      ]
+
+    {recipe, new_options}
   end
 end

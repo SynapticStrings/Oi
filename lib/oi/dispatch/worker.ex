@@ -18,9 +18,12 @@ defmodule Oi.Dispatch.Worker do
     with {:ok, dynamic_inputs} <-
            resolve_dependencies(bundle, drafting) do
       base_opts =
-        Keyword.merge(conf.orchid_opts,
-          baggage: Map.put(conf.orchid_baggage, :interventions, drafting.interventions)
-        )
+        conf.orchid_opts
+        |> Keyword.update(:baggage, %{interventions: drafting.interventions}, fn baggage ->
+          baggage
+          |> Enum.into(%{})
+          |> Map.put(:interventions, drafting.interventions)
+        end)
 
       {recipe, final_opts} = Config.apply_orchid_adapters(conf, {bundle.recipe, base_opts})
       run_orchid(recipe, dynamic_inputs, final_opts)
