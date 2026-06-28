@@ -236,8 +236,62 @@ defmodule Oi.ComprehensiveSmokeTest do
       assert map_size(result.memory) > 0
       assert_received {:adapter_ran, _name}
     end
-  end
 
+    @tag :orchid_intervention
+    test "orchid_intervention adapter enables output override" do
+      alias OiTest.DummyOrchidStep, as: S
+
+      graph =
+        Graph.new()
+        |> Graph.add_node(%Node{id: :step1, container: S.DummyStep1, inputs: [:in], outputs: [:mid]})
+        |> Graph.add_node(%Node{id: :step2, container: S.DummyStep2, inputs: [:mid], outputs: [:out]})
+        |> Graph.add_edge(Edge.new(:step1, :mid, :step2, :mid))
+
+      {:ok, compiled} = Oi.compile(graph)
+
+      {:ok, result} =
+        Oi.execute(compiled,
+          data: %{
+            step1: %{in: "ORIGINAL"},
+            step2: %{mid: {:override, "INTERVENED"}}
+          },
+          orchid_adapters: [&Oi.Adapters.orchid_intervention/1]
+        )
+
+      # Without intervention:  "ORIGINAL -> DummyStep1 -> DummyStep2"
+      # With override on mid:   step2 receives "INTERVENED"
+      assert {:ok, "INTERVENED -> DummyStep2"} = Oi.Result.reify(result, "step2|out")
+    end
+
+    @tag :orchid_intervention
+    test "orchid_intervention custom type post-execution merge" do
+      alias OiTest.DummyOrchidStep, as: S
+
+      graph =
+        Graph.new()
+        |> Graph.add_node(%Node{id: :step1, container: S.DummyStep1, inputs: [:in], outputs: [:mid]})
+        |> Graph.add_node(%Node{id: :step2, container: S.DummyStep2, inputs: [:mid], outputs: [:out]})
+        |> Graph.add_edge(Edge.new(:step1, :mid, :step2, :mid))
+
+      {:ok, compiled} = Oi.compile(graph)
+
+      {:ok, result} =
+        Oi.execute(compiled,
+          data: %{
+            step1: %{in: "ORIGINAL"},
+            step2: %{mid: {OiTest.DummyInterventionType, "WRAPPED"}}
+          },
+          orchid_adapters: [&Oi.Adapters.orchid_intervention/1]
+        )
+
+      # DummyInterventionType.merge(inner, intervention) = "#{intervention}[#{inner}]"
+      # step1 produces "ORIGINAL -> DummyStep1"
+      # merge("ORIGINAL -> DummyStep1", "WRAPPED") = "WRAPPED[ORIGINAL -> DummyStep1]"
+      # step2 appends " -> DummyStep2"
+      assert {:ok, "WRAPPED[ORIGINAL -> DummyStep1] -> DummyStep2"} =
+               Oi.Result.reify(result, "step2|out")
+    end
+  end
   # ── Multi-session isolation ──────────────────────────────
 
   describe "multi-tenant" do

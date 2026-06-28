@@ -16,7 +16,7 @@ defmodule Oi.MixProject do
       description: "Lightweight Orchid integration layer with pluggable execution strategies",
       test_coverage: [
         ignore_modules: [
-          ~r/.*Test.*/
+          ~r/.*Test.*/,
         ]
       ]
     ]
@@ -38,6 +38,8 @@ defmodule Oi.MixProject do
     [
       {:orchid, "~> 0.6"},
       {:orchid_symbiont, "~> 0.2"},
+      {:orchid_intervention, "~> 0.2", optional: true},
+      {:orchid_stratum, "~> 0.2", optional: true},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end

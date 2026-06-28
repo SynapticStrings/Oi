@@ -38,9 +38,9 @@ defmodule OiTest do
       assert memory == %{}
 
       assert interventions == %{
-               {:step3, :in1} => {:override, "overridden_in1"},
-               {:step3, :in2} => "plain_overridden_in2",
-               {:step4, :in} => {:offset, 42}
+               {:step1, :out} => {:override, "overridden_in1"},
+               {:step2, :out} => "plain_overridden_in2",
+               {:step3, :out} => {:offset, 42}
              }
     end
 
@@ -62,7 +62,7 @@ defmodule OiTest do
 
       # step3.in1: has incoming edge from step1.out
       assert interventions == %{
-               {:step3, :in1} => {:override, "intercepted"}
+               {:step1, :out} => {:override, "intercepted"}
              }
     end
 
@@ -76,8 +76,8 @@ defmodule OiTest do
 
       # memory value stays as 123 (not wrapped in Orchid.Param)
       assert memory[{:step1, :in}] == 123
-      # intervention tuple stays as {:override, "bar"}
-      assert interventions[{:step3, :in1}] == {:override, "bar"}
+      # intervention value stays as {:override, "bar"}, keyed by producer output
+      assert interventions[{:step1, :out}] == {:override, "bar"}
     end
 
     test "empty data returns two empty maps", %{edges: edges} do
@@ -103,7 +103,7 @@ defmodule OiTest do
       {memory, interventions} = Options.resolve_data(data, edges)
 
       assert memory == %{{:step1, :in} => "hello", {:step2, :in} => "world"}
-      assert interventions == %{{:step3, :in1} => {:override, "bye"}}
+      assert interventions == %{{:step1, :out} => {:override, "bye"}}
     end
 
     test "single node with multiple ports", %{edges: edges} do
@@ -120,8 +120,8 @@ defmodule OiTest do
       # in1, in2: have upstream edges → intervention
       # out: no incoming edge (only outgoing) → memory
       assert interventions == %{
-               {:step3, :in1} => {:override, "X"},
-               {:step3, :in2} => "Y"
+               {:step1, :out} => {:override, "X"},
+               {:step2, :out} => "Y"
              }
 
       assert memory == %{{:step3, :out} => "Z"}
@@ -142,7 +142,7 @@ defmodule OiTest do
 
       # tgt.in has edge src.out → tgt.in → HAS upstream → intervention
       assert memory == %{}
-      assert interventions == %{{:tgt, :in} => {:override, "gotcha"}}
+      assert interventions == %{{:src, :out} => {:override, "gotcha"}}
     end
 
     test "source port with only outgoing edges is NOT upstream" do

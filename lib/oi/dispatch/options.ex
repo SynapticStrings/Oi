@@ -41,10 +41,12 @@ defmodule Oi.Dispatch.Options do
     flat = flatten_data(data)
 
     Enum.reduce(flat, {%{}, %{}}, fn {{node_id, port} = key, value}, {mem, intv} ->
-      if has_upstream?(edges, node_id, port) do
-        {mem, Map.put(intv, key, value)}
-      else
-        {Map.put(mem, key, value), intv}
+      case find_producer(edges, node_id, port) do
+        nil ->
+          {Map.put(mem, key, value), intv}
+
+        {producer_node, producer_port} ->
+          {mem, Map.put(intv, {producer_node, producer_port}, value)}
       end
     end)
   end
@@ -97,7 +99,7 @@ defmodule Oi.Dispatch.Options do
         k when is_list(k) -> Enum.into(k, %{})
       end
       |> Map.merge(conf.orchid_baggage)
-      |> Map.put(:interventions, drafting.interventions)
+      |> Map.put(:interventions, unwrap_interventions(drafting.interventions))
       |> Map.put_new(:symbiont_mapper, Map.get(conf.orchid_baggage, :symbiont_mapper, %{}))
       |> maybe_put_scope_id(conf)
 
@@ -109,6 +111,24 @@ defmodule Oi.Dispatch.Options do
     scope_id = conf.name || Map.get(baggage, :scope_id)
     if scope_id, do: Map.put(baggage, :scope_id, scope_id), else: baggage
   end
+
+  defp unwrap_interventions(interventions) do
+    Map.new(interventions, fn {key, %Orchid.Param{payload: payload}} ->
+      case payload do
+        {type, val} ->
+          param = ensure_orchid_param(key, val)
+          {key, {type, param}}
+
+        plain ->
+          # Plain value without explicit type defaults to :override
+          param = ensure_orchid_param(key, plain)
+          {key, {:override, param}}
+      end
+    end)
+  end
+
+  defp ensure_orchid_param(key, %Orchid.Param{} = p), do: %{p | name: key}
+  defp ensure_orchid_param(key, val), do: Orchid.Param.new(key, :any, val)
 
   # ---- Helpers ----
 
@@ -130,8 +150,11 @@ defmodule Oi.Dispatch.Options do
     end
   end
 
-  defp has_upstream?(edges, node_id, port) do
-    Enum.any?(edges, fn e -> e.to_node == node_id and e.to_port == port end)
+  defp find_producer(edges, node_id, port) do
+    case Enum.find(edges, fn e -> e.to_node == node_id and e.to_port == port end) do
+      nil -> nil
+      edge -> {edge.from_node, edge.from_port}
+    end
   end
 
   defp wrap_orchid_param(name, %Orchid.Param{} = p), do: %{p | name: name}
