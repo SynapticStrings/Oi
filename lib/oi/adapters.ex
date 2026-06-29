@@ -26,15 +26,25 @@ defmodule Oi.Adapters do
   # ---- OrchidStratum ----
 
   @doc """
-  Prepends `OrchidStratum.BypassHook` to `:global_hooks_stack`
-  when `:orchid_stratum` is available at runtime.
+  Prepends `OrchidStratum.BypassHook` to `:global_hooks_stack` and
+  auto-initialises ETS-backed Meta/Blob stores in baggage when
+  `:orchid_stratum` is available at runtime.
 
-  No-op otherwise.
+  ## Storage auto-init
+
+  If `:meta_store` / `:blob_store` are already present in baggage they
+  are left untouched (user-supplied adapters win). Otherwise ETS-backed
+  defaults (`MetaStorage.EtsAdapter` / `BlobStorage.EtsAdapter`) are
+  created and inserted.
+
+  No-op when `orchid_stratum` is not available.
   """
   @spec orchid_stratum({Orchid.Recipe.t(), keyword()}) :: {Orchid.Recipe.t(), keyword()}
   def orchid_stratum(acc) do
     if Code.ensure_loaded?(OrchidStratum.BypassHook) do
-      ensure_hook_prepended(acc, OrchidStratum.BypassHook)
+      acc
+      |> ensure_stratum_storage()
+      |> ensure_hook_prepended(OrchidStratum.BypassHook)
     else
       acc
     end
@@ -45,7 +55,10 @@ defmodule Oi.Adapters do
   @doc """
   Prepends both hooks when available, respecting the layering order:
 
-      OrchidIntervention => OrchidStratum => ... => Core
+      OrchidStratum => OrchidIntervention => ... => Core
+
+  Includes auto-init of ETS-backed Meta/Blob stores (same as
+  `orchid_stratum/1`).
 
   Equivalent to `orchid_adapters: [&orchid_stratum/1, &orchid_intervention/1]`
   but in a single adapter call.
@@ -67,5 +80,23 @@ defmodule Oi.Adapters do
     else
       {recipe, Keyword.put(opts, :global_hooks_stack, [hook | hooks])}
     end
+  end
+
+  # Auto-initialises ETS-backed Meta/Blob stores in baggage unless
+  # the user has already supplied their own adapters.
+  # Uses `put_new_lazy` so we don't init tables unnecessarily.
+  defp ensure_stratum_storage({recipe, opts}) do
+    baggage = Keyword.get(opts, :baggage, %{}) || %{}
+
+    baggage =
+      baggage
+      |> Map.put_new_lazy(:meta_store, fn ->
+        {OrchidStratum.MetaStorage.EtsAdapter, OrchidStratum.MetaStorage.EtsAdapter.init()}
+      end)
+      |> Map.put_new_lazy(:blob_store, fn ->
+        {OrchidStratum.BlobStorage.EtsAdapter, OrchidStratum.BlobStorage.EtsAdapter.init()}
+      end)
+
+    {recipe, Keyword.put(opts, :baggage, baggage)}
   end
 end
