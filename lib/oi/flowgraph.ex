@@ -70,8 +70,9 @@ defmodule Oi.Flowgraph do
     resolved = Macro.expand(module, __CALLER__)
 
     if is_atom(resolved) do
-      unless Code.ensure_loaded?(resolved) and
-               function_exported?(resolved, :__node_spec__, 0) do
+      Code.ensure_compiled!(resolved)
+
+      unless function_exported?(resolved, :__node_spec__, 0) do
         raise ArgumentError,
               "step expects a module using Oi.Step (with __node_spec__/0), " <>
                 "got: #{inspect(resolved)}"

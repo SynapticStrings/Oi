@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.6.1 (2026-06-29)
+
+### Fixed
+
+- `step` macro: changed `Code.ensure_loaded?` to `Code.ensure_compiled!` so that
+  cross-module references work correctly in multi-file projects (e.g. Greenhouse).
+  `Code.ensure_loaded?` returned false before the referenced module was compiled,
+  causing false-positive validation failures.
+
 ## v0.6.0 (2026-06-29)
 
 ### Added
