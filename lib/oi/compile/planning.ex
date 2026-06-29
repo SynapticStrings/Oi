@@ -5,6 +5,19 @@ defmodule Oi.Compile.Planning do
   Bundles sharing the same topological depth are grouped into stages.
   Tasks within a stage run in parallel; stages execute sequentially
   (barrier synchronization).
+
+  ## Relationship to `Bundle.compile_graph/2`
+
+  `Bundle.compile_graph/2` already guarantees the graph is a DAG via
+  topological sort.  `Planning.build/1` does NOT re-detect cycles — its
+  job is to determine which bundles can run in parallel by assigning
+  levels based on `requires` / `exports` cross-references.
+
+  The `fuel` parameter in `do_assign/4` is a defensive guard: the
+  iteration count is bounded by `length(bundles)`, which is always
+  sufficient for any DAG (longest path ≤ node count).  If the graph
+  somehow contained a cycle despite the earlier topo sort, the fuel
+  guard prevents infinite recursion.
   """
 
   alias Oi.Compile.Bundle
@@ -44,13 +57,13 @@ defmodule Oi.Compile.Planning do
   @doc """
   Build a Plan from a flat list of Bundles.
 
-  Bundles are grouped by their position in the compiled output.
-  Within a single workspace, all bundles form a linear sequence
-  (one bundle per cluster). Bundles at the same index across
-  different compilations would run in the same stage.
+  Assigns each bundle a level based on its upstream dependencies
+  (via `requires` / `exports`).  Bundles at the same level have no
+  cross-dependencies and can execute in parallel within a stage.
 
-  For a single workspace (one graph → one compile call), each
-  bundle is its own stage — they execute sequentially in topo order.
+  The graph must already be a DAG — cycle detection here is defensive
+  (see moduledoc).  Callers should ensure `Bundle.compile_graph/2` ran
+  first to verify acyclicity.
   """
   @spec build([Bundle.t()]) :: {:ok, Plan.t()} | {:error, :cycle_detected}
   def build(bundles) do
@@ -89,8 +102,9 @@ defmodule Oi.Compile.Planning do
     do_assign(ids, deps, %{}, length(ids))
   end
 
-  # max(fuel) <- num(bundle)
-  # fuel < 0 -> has cycle
+  # Defensive guard: fuel < 0 means the iteration count exceeded the
+  # bundle count, which is impossible for a DAG.  This can only be
+  # reached if Bundle.compile_graph/2 failed to catch a cycle.
   defp do_assign(_ids, _deps, _levels, fuel) when fuel < 0, do: :error
 
   defp do_assign(ids, deps, levels, fuel) do

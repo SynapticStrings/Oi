@@ -62,10 +62,12 @@ defmodule Oi.Dispatch.Options do
          wrap_orchid_param(PortRef.to_orchid_key({:port, n, p}), v)}
       end)
 
+    # Interventions stay raw — no Param wrapping here.
+    # Wrapping happens once in assemble_run_opts/3 when building the
+    # final {type, %Orchid.Param{}} tuple for Orchid's ApplyInterventions hook.
     interventions_io =
       Map.new(interventions_raw, fn {{n, p}, v} ->
-        {PortRef.to_orchid_key({:port, n, p}),
-         wrap_orchid_param(PortRef.to_orchid_key({:port, n, p}), v)}
+        {PortRef.to_orchid_key({:port, n, p}), v}
       end)
 
     {memory_io, interventions_io}
@@ -76,20 +78,15 @@ defmodule Oi.Dispatch.Options do
   @doc """
   Assemble the keyword list passed to `Orchid.run/3`.
 
-  Merges interventions from Drafting, user baggage from Config, computes
-  `scope_id`, and ensures `OrchidSymbiont.Hooks.Injector` is in the hook
-  stack (exactly once).
+  Merges interventions from Drafting, user baggage from Config, and resolves
+  `scope_id`.  Does NOT inject OrchidSymbiont.Hooks.Injector — use
+  `Oi.Adapters.orchid_symbiont/1` in the `:orchid_adapters` chain instead.
   """
   @spec assemble_run_opts(keyword(), Oi.Dispatch.Config.t(), Oi.Dispatch.Drafting.t()) ::
           keyword()
   def assemble_run_opts(opts, conf, drafting) do
     {old_hooks, opts_no_hooks} = Keyword.pop(opts, :global_hooks_stack, [])
     {old_baggage, opts_clean} = Keyword.pop(opts_no_hooks, :baggage, %{})
-
-    hooks_stack =
-      old_hooks
-      |> Kernel.++([OrchidSymbiont.Hooks.Injector])
-      |> Enum.uniq()
 
     merged_baggage =
       old_baggage
@@ -99,12 +96,12 @@ defmodule Oi.Dispatch.Options do
         k when is_list(k) -> Enum.into(k, %{})
       end
       |> Map.merge(conf.orchid_baggage)
-      |> Map.put(:interventions, unwrap_interventions(drafting.interventions))
+      |> Map.put(:interventions, wrap_interventions_for_orchid(drafting.interventions))
       |> Map.put_new(:symbiont_mapper, Map.get(conf.orchid_baggage, :symbiont_mapper, %{}))
       |> maybe_put_scope_id(conf)
 
     opts_clean ++
-      [baggage: merged_baggage, global_hooks_stack: hooks_stack]
+      [baggage: merged_baggage, global_hooks_stack: old_hooks]
   end
 
   defp maybe_put_scope_id(baggage, conf) do
@@ -112,18 +109,18 @@ defmodule Oi.Dispatch.Options do
     if scope_id, do: Map.put(baggage, :scope_id, scope_id), else: baggage
   end
 
-  defp unwrap_interventions(interventions) do
-    Map.new(interventions, fn {key, %Orchid.Param{payload: payload}} ->
-      case payload do
-        {type, val} ->
-          param = ensure_orchid_param(key, val)
-          {key, {type, param}}
+  # Takes raw interventions from Drafting (as produced by build_drafting_inputs/2)
+  # and wraps them once into {type, %Orchid.Param{}} tuples for Orchid's
+  # ApplyInterventions hook.
+  defp wrap_interventions_for_orchid(interventions) do
+    Map.new(interventions, fn {key, value} ->
+      {type, val} =
+        case value do
+          {t, v} -> {t, v}
+          plain -> {:override, plain}
+        end
 
-        plain ->
-          # Plain value without explicit type defaults to :override
-          param = ensure_orchid_param(key, plain)
-          {key, {:override, param}}
-      end
+      {key, {type, ensure_orchid_param(key, val)}}
     end)
   end
 

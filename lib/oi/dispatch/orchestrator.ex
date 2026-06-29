@@ -45,7 +45,6 @@ defmodule Oi.Dispatch.Orchestrator do
 
   defp merge_results(%Drafting{} = drafting, outputs) do
     outputs
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()
     |> then(&Drafting.put(drafting, &1))
   end

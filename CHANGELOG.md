@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.6.0 (2026-06-29)
+
+### Added
+
+- `Oi.Flowgraph` DSL macros — `graph/1`, `step/2`, `~>/2` for declarative graph building.
+  Supports both `node.port` dot-notation and `{node, port}` tuple form.
+  `step` validates at compile time that the module implements `__node_spec__/0`.
+- `Oi.Adapters.orchid_symbiont/1` — opt-in adapter that prepends
+  `OrchidSymbiont.Hooks.Injector` at runtime when `orchid_symbiont` is available.
+
+### Changed
+
+- `Oi.Result.fetch/2` and `reify/2` now return `{:error, :not_found}` instead of bare
+  `:error` — consistent with the rest of the codebase.
+- `Oi.Dispatch.Drafting.fetch/2` — same `{:error, :not_found}` change.
+- `Oi.Dispatch.Orchestrator.merge_results/2` no longer silently drops `nil` values from
+  step outputs.
+- `Oi.Compile.Bundle.compile_graph/2` now sorts bundles deterministically by cluster name.
+- `Oi.Runtime.Session.Instances` supervisor strategy changed from `one_for_all` to
+  `one_for_one` — Task.Supervisor and OrchidSymbiont.Runtime no longer cascade-kill
+  each other.
+
+### Removed
+
+- `Oi.Dispatch.Options.assemble_run_opts/3` no longer auto-injects
+  `OrchidSymbiont.Hooks.Injector` into the hooks stack. Use
+  `Oi.Adapters.orchid_symbiont/1` in the `:orchid_adapters` chain instead.
+- `unwrap_interventions/1` in Options — replaced by `wrap_interventions_for_orchid/1`
+  that does a single wrap instead of unwrap-then-rewrap.
+
+### Fixed
+
+- Intervention data no longer goes through an unnecessary `wrap → unwrap → wrap` cycle —
+  raw values are stored in Drafting and wrapped once in `assemble_run_opts/3`.
+
 ## v0.5.0 & v0.4.0 (2026-06-26)
 
 ### Update

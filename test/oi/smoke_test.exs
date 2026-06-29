@@ -27,11 +27,15 @@ defmodule Oi.SmokeTest do
       {:ok, bundles} = Bundle.compile_graph(graph, cluster)
 
       assert length(bundles) == 2
-      [bundle_red, bundle_default] = bundles
+
+      bundle_red = Enum.find(bundles, &(:step3 in &1.node_ids))
+      bundle_default = Enum.find(bundles, &(:step1 in &1.node_ids))
 
       # bundle_red contains step3
+      assert bundle_red != nil
       assert :step3 in bundle_red.node_ids
       # bundle_default contains step1, step2, step4
+      assert bundle_default != nil
       assert :step1 in bundle_default.node_ids
     end
 

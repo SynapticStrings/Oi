@@ -52,9 +52,7 @@ defmodule Oi.SymbiontSmokeTest do
           data: %{pred_step: %{text: "hello"}},
           executor: Oi.Executor.Sync,
           orchid_baggage: %{scope_id: "sym-e2e"},
-          orchid_opts: [
-            global_hooks_stack: [OrchidSymbiont.Hooks.Injector]
-          ]
+          orchid_adapters: [&Oi.Adapters.orchid_symbiont/1]
         )
 
       assert is_struct(result, Oi.Result)

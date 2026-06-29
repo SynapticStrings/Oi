@@ -7,7 +7,7 @@ defmodule Oi.Dispatch.Drafting do
   """
 
   @type io_key :: Orchid.Step.io_key()
-  @type t :: %__MODULE__{memory: %{io_key() => Orchid.Param.t()}}
+  @type t :: %__MODULE__{memory: %{io_key() => Orchid.Param.t()}, interventions: %{io_key() => term()}}
 
   defstruct memory: %{}, interventions: %{}
 
@@ -26,8 +26,13 @@ defmodule Oi.Dispatch.Drafting do
     %{d | memory: Map.merge(mem, delta)}
   end
 
-  @spec fetch(t(), io_key()) :: {:ok, Orchid.Param.t()} | :error
-  def fetch(%__MODULE__{memory: mem}, key), do: Map.fetch(mem, key)
+  @spec fetch(t(), io_key()) :: {:ok, Orchid.Param.t()} | {:error, :not_found}
+  def fetch(%__MODULE__{memory: mem}, key) do
+    case Map.fetch(mem, key) do
+      {:ok, val} -> {:ok, val}
+      :error -> {:error, :not_found}
+    end
+  end
 
   @spec take(t(), [io_key()]) :: %{io_key() => Orchid.Param.t()}
   def take(%__MODULE__{memory: mem}, keys) do

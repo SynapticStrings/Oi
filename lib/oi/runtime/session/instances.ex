@@ -16,6 +16,6 @@ defmodule Oi.Runtime.Session.Instances do
       {Task.Supervisor, name: Oi.Runtime.Session.tasks_tuple(oi_name)}
     ]
 
-    Supervisor.init(children, strategy: :one_for_all)
+    Supervisor.init(children, strategy: :one_for_one)
   end
 end

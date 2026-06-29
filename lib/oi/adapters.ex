@@ -50,6 +50,28 @@ defmodule Oi.Adapters do
     end
   end
 
+  # ---- OrchidSymbiont ----
+
+  @doc """
+  Prepends `OrchidSymbiont.Hooks.Injector` to `:global_hooks_stack`
+  when `:orchid_symbiont` is available at runtime.
+
+  No-op otherwise.
+
+  Use this when your graph contains symbiont steps that need model
+  handler injection:
+
+      orchid_adapters: [&Oi.Adapters.orchid_symbiont/1]
+  """
+  @spec orchid_symbiont({Orchid.Recipe.t(), keyword()}) :: {Orchid.Recipe.t(), keyword()}
+  def orchid_symbiont(acc) do
+    if Code.ensure_loaded?(OrchidSymbiont.Hooks.Injector) do
+      ensure_hook_prepended(acc, OrchidSymbiont.Hooks.Injector)
+    else
+      acc
+    end
+  end
+
   # ---- Combined: OrchidIntervention + OrchidStratum ----
 
   @doc """

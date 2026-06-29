@@ -111,7 +111,7 @@ defmodule Oi.ComprehensiveSmokeTest do
           }
         )
 
-      assert :error = Oi.Result.fetch(result, "nonexistent|key")
+      assert {:error, :not_found} = Oi.Result.fetch(result, "nonexistent|key")
     end
 
     test "reify returns :error for missing key" do
@@ -126,7 +126,7 @@ defmodule Oi.ComprehensiveSmokeTest do
           }
         )
 
-      assert :error = Oi.Result.reify(result, "nonexistent|key")
+      assert {:error, :not_found} = Oi.Result.reify(result, "nonexistent|key")
     end
   end
 
@@ -138,7 +138,7 @@ defmodule Oi.ComprehensiveSmokeTest do
       d = Drafting.new(%{"key" => param})
 
       assert {:ok, ^param} = Drafting.fetch(d, "key")
-      assert :error = Drafting.fetch(d, "missing")
+      assert {:error, :not_found} = Drafting.fetch(d, "missing")
     end
 
     test "new/2 seeds memory and interventions" do

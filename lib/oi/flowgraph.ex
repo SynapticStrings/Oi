@@ -21,32 +21,115 @@ defmodule Oi.Flowgraph do
     end
   end
 
-  # add_step!(graph, oi_step, opts)
-
-  defdelegate remove_step(graph, node_id), to: Oi.Topology.Graph, as: :remove_node
-
   def connect(%Graph{} = graph, {from_node, from_port}, {to_node, to_port})
-      when belongs_port(from_node) and belongs_port(from_port) and belongs_port(to_node) and
-             belongs_port(to_port) do
+      when belongs_port(from_node) and belongs_port(from_port) and
+             belongs_port(to_node) and belongs_port(to_port) do
     Graph.add_edge(graph, Graph.Edge.new(from_node, from_port, to_node, to_port))
   end
 
-  # link(graph, from_node, to_node, same_port) when belongs_port(from_node) and belongs_port(to_node) and belongs_port(same_port) do
+  # ---- DSL Macros ----
 
-  # link all exists same port(must from -> to)
-  # link(graph, from_node, to_node) when belongs_port(from_node) and belongs_port(to_node) do
+  @doc """
+  DSL entry point.  Initialises an empty graph and evaluates the body,
+  returning the fully built graph.
 
-  defmodule Macro do
-    # TODO
-    # ---- Provide Macro API ----
-    _ = """
-        # Example
-        graph do
-          step StepModule
-          step StepModule2, as: :aliased_step, :opts: [foo: :bar]
+  ## Example
 
-          :step, :mid -> :aliased_step, :input
-        end
-    """
+      iex> import Oi.Flowgraph
+      iex> graph = graph do
+      ...>   step OiTest.DummyOiStep.Greet
+      ...>   step OiTest.DummyOiStep.Exclaim
+      ...>   greet.greeting ~> exclaim.text
+      ...> end
+      iex> map_size(graph.nodes)
+      2
+      iex> MapSet.size(graph.edges)
+      1
+  """
+  defmacro graph(do: block) do
+    quote do
+      var!(graph_acc) = Oi.Flowgraph.new_flowchart()
+      unquote(block)
+      var!(graph_acc)
+    end
+  end
+
+  @doc """
+  Add a step to the accumulated graph.
+
+  The module must `use Oi.Step` (i.e. expose `__node_spec__/0`).
+  Validated at compile time — raises `ArgumentError` if the module
+  does not implement the expected contract.
+
+  ## Options
+
+    * `:as`   — node alias (default: module's declared name)
+    * `:opts` — keyword list forwarded as step options
+  """
+  defmacro step(module, opts \\ []) do
+    resolved = Macro.expand(module, __CALLER__)
+
+    if is_atom(resolved) do
+      unless Code.ensure_loaded?(resolved) and
+               function_exported?(resolved, :__node_spec__, 0) do
+        raise ArgumentError,
+              "step expects a module using Oi.Step (with __node_spec__/0), " <>
+                "got: #{inspect(resolved)}"
+      end
+    end
+
+    quote do
+      var!(graph_acc) =
+        Oi.Flowgraph.add_step(var!(graph_acc), unquote(module), unquote(opts))
+    end
+  end
+
+  @doc """
+  Connect two node ports.
+
+  Both sides accept two forms:
+
+    * `node.port`   — dot-expression
+    * `{node, port}` — explicit tuple
+  """
+  defmacro left ~> right do
+    from = extract_port_pair(left, __CALLER__)
+    to = extract_port_pair(right, __CALLER__)
+
+    quote do
+      var!(graph_acc) =
+        Oi.Flowgraph.connect(var!(graph_acc), unquote(from), unquote(to))
+    end
+  end
+
+  # ---- Port-pair extraction (compile-time) ----
+
+  # Dot expression: node.port
+  defp extract_port_pair(
+         {{:., _, [{node, _, ctx}, port]}, _, []},
+         _env
+       )
+       when is_atom(node) and is_atom(port) and is_atom(ctx) do
+    {node, port}
+  end
+
+  # Aliased module: Module.Sub.step.port
+  defp extract_port_pair(
+         {{:., _, [{:__aliases__, _, mod_parts}, port]}, _, []},
+         _env
+       )
+       when is_list(mod_parts) and is_atom(port) do
+    {Module.concat(mod_parts), port}
+  end
+
+  # 2-tuple literal: {node, port}
+  defp extract_port_pair({node, port}, _env)
+       when is_atom(node) and is_atom(port) do
+    {node, port}
+  end
+
+  defp extract_port_pair(other, _env) do
+    raise ArgumentError,
+          "~> expects node.port or {node, port}, got: #{Macro.to_string(other)}"
   end
 end
