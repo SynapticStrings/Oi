@@ -8,17 +8,21 @@ defmodule Oi.Flowgraph do
   defdelegate new_flowchart, to: Oi.Topology.Graph, as: :new
 
   @spec add_step(Graph.t(), module(), keyword()) :: Graph.t()
-  def add_step(%Graph{} = graph, oi_step, opts \\ []) do
-    with true <- function_exported?(oi_step, :__node_spec__, 0) do
-      node = struct(Graph.Node, oi_step.__node_spec__())
+  def add_step(%Graph{} = graph, oi_step, opts \\ []) when is_atom(oi_step) do
+    {:module, ^oi_step} = Code.ensure_loaded(oi_step)
 
-      node_alias = Keyword.get(opts, :as, node.id)
-      node_options = Keyword.get(opts, :opts, [])
-
-      Graph.add_node(graph, %{node | id: node_alias, options: node_options})
-    else
-      _ -> graph
+    unless function_exported?(oi_step, :__node_spec__, 0) do
+      raise ArgumentError,
+            "#{inspect(oi_step)} does not export __node_spec__/0. " <>
+              "Did it use Oi.Step?"
     end
+
+    node = struct(Graph.Node, oi_step.__node_spec__())
+
+    node_alias = Keyword.get(opts, :as, node.id)
+    node_options = Keyword.get(opts, :opts, [])
+
+    Graph.add_node(graph, %{node | id: node_alias, options: node_options})
   end
 
   def connect(%Graph{} = graph, {from_node, from_port}, {to_node, to_port})
@@ -68,6 +72,14 @@ defmodule Oi.Flowgraph do
   """
     defmacro step(module, opts \\ []) do
     resolved = Macro.expand(module, __CALLER__)
+
+    Code.ensure_compiled!(resolved)
+
+    unless function_exported?(resolved, :__node_spec__, 0) do
+      raise ArgumentError,
+            "#{inspect(resolved)} does not export __node_spec__/0. " <>
+              "Did it use Oi.Step?"
+    end
 
     quote do
       var!(graph_acc) =
