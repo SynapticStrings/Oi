@@ -1,11 +1,11 @@
 # Changelog
 
-## v0.6.1 (2026-06-29)
+## v0.6.2 (2026-06-29)
 
 ### Added
 
 - `Oi.Flowgraph.many_step/1` — batch-add steps that share no options.
-  Expands to a block of `step/1` calls, each validated at compile time.
+  Expands to a block of `step/1` calls.
 
       graph do
         many_step [LoadPosts, LoadPages, LoadImages]
@@ -13,11 +13,27 @@
         ...
       end
 
+### Changed
+
+- `orchid_symbiont` is now an **optional** dependency.  Session auto-detects
+  whether `OrchidSymbiont.Runtime` is available at runtime and omits the
+  child spec when the dep is not installed.  `Oi.Step` raises a clear error
+  at compile time if `symbiont?: true` is used without the dep.
+- `step` macro: removed compile-time `function_exported?` validation
+  (unreliable across files during macro expansion).  Validation is deferred
+  to `add_step/3` at runtime.  For compile-time enforcement, add
+  `Code.ensure_compiled!(Module)` at module level in your graph file.
+
 ### Fixed
 
-- `step` macro validation: switched to two-tier `Code.ensure_compiled/1` approach
-  that works correctly in both regular `.ex` compilation (cross-file module resolution)
-  and `.exs` scripts (defers to runtime when in-file modules aren't yet compiled).
+- `step` macro: `unquote(module)` → `unquote(resolved)` so that
+  `add_step/3` receives the expanded module atom instead of the alias AST,
+  fixing graphs that were silently producing zero nodes.
+- `many_step` expansion: fully-qualified `Oi.Flowgraph.step/1` calls to
+  guarantee resolution regardless of import context.
+- `Oi.Adapters.ensure_stratum_storage/1`: uses `Module.concat` + `apply/3`
+  to avoid compile-time warnings about undefined `OrchidStratum.*` modules
+  when `orchid_stratum` is not installed (optional dep).
 
 ## v0.6.0 (2026-06-29)
 

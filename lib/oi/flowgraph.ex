@@ -69,22 +69,9 @@ defmodule Oi.Flowgraph do
     defmacro step(module, opts \\ []) do
     resolved = Macro.expand(module, __CALLER__)
 
-    if is_atom(resolved) do
-      if match?({:ok, _}, Code.ensure_compiled(resolved)) do
-        unless function_exported?(resolved, :__node_spec__, 0) do
-          raise ArgumentError,
-                "step expects a module using Oi.Step (with __node_spec__/0), " <>
-                  "got: #{inspect(resolved)}"
-        end
-      end
-
-      # if ensure_compiled? returns false (e.g. .exs in-file modules),
-      # defer validation to runtime via add_step/3.
-    end
-
     quote do
       var!(graph_acc) =
-        Oi.Flowgraph.add_step(var!(graph_acc), unquote(module), unquote(opts))
+        Oi.Flowgraph.add_step(var!(graph_acc), unquote(resolved), unquote(opts))
     end
   end
 
@@ -99,9 +86,13 @@ defmodule Oi.Flowgraph do
       many_step [LoadPosts, LoadPages, LoadImages]
   """
         defmacro many_step(modules) do
-    # Expands to a block of step/1 calls — each validates at its own
-    # expansion time via Code.ensure_compiled!/1.
-    {:__block__, [], Enum.map(modules, &{:step, [], [&1]})}
+    {:__block__, [], Enum.map(modules, &build_step_ast/1)}
+  end
+
+  defp build_step_ast(mod) do
+    quote do
+      Oi.Flowgraph.step(unquote(mod))
+    end
   end
 
     @doc """

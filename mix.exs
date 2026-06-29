@@ -1,7 +1,7 @@
 defmodule Oi.MixProject do
   use Mix.Project
 
-  @version "0.6.1"
+  @version "0.6.2"
 
   def project do
     [
@@ -37,7 +37,7 @@ defmodule Oi.MixProject do
   defp deps do
     [
       {:orchid, "~> 0.6"},
-      {:orchid_symbiont, "~> 0.2"},
+      {:orchid_symbiont, "~> 0.2", optional: true},
       {:orchid_intervention, "~> 0.2", optional: true},
       {:orchid_stratum, "~> 0.2", optional: true},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}

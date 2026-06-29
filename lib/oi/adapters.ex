@@ -113,10 +113,14 @@ defmodule Oi.Adapters do
     baggage =
       baggage
       |> Map.put_new_lazy(:meta_store, fn ->
-        {OrchidStratum.MetaStorage.EtsAdapter, OrchidStratum.MetaStorage.EtsAdapter.init()}
+        # Module.concat + apply avoids compile-time warnings when
+        # orchid_stratum is not available (optional dep).
+        mod = Module.concat([OrchidStratum, MetaStorage, EtsAdapter])
+        {mod, apply(mod, :init, [])}
       end)
       |> Map.put_new_lazy(:blob_store, fn ->
-        {OrchidStratum.BlobStorage.EtsAdapter, OrchidStratum.BlobStorage.EtsAdapter.init()}
+        mod = Module.concat([OrchidStratum, BlobStorage, EtsAdapter])
+        {mod, apply(mod, :init, [])}
       end)
 
     {recipe, Keyword.put(opts, :baggage, baggage)}

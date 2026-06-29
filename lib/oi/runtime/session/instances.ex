@@ -11,10 +11,17 @@ defmodule Oi.Runtime.Session.Instances do
   @impl true
   def init({oi_name, opts}) do
     children = [
-      {OrchidSymbiont.Runtime,
-       scope_id: oi_name, strict_mode: Keyword.get(opts, :orchid_symbiont_strict, false)},
       {Task.Supervisor, name: Oi.Runtime.Session.tasks_tuple(oi_name)}
     ]
+
+    children =
+      if Code.ensure_loaded?(OrchidSymbiont.Runtime) do
+        [{OrchidSymbiont.Runtime,
+          scope_id: oi_name,
+          strict_mode: Keyword.get(opts, :orchid_symbiont_strict, false)} | children]
+      else
+        children
+      end
 
     Supervisor.init(children, strategy: :one_for_one)
   end

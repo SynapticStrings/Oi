@@ -60,7 +60,19 @@ defmodule Oi.Step do
     behaviour =
       case type do
         :pure -> Orchid.Step
-        :symbiont -> OrchidSymbiont.Step
+
+        :symbiont ->
+          unless Code.ensure_loaded?(OrchidSymbiont.Step) do
+            raise """
+            orchid_symbiont is not available.
+
+            Add it to your deps:
+
+                {:orchid_symbiont, "~> 0.2"}
+            """
+          end
+
+          OrchidSymbiont.Step
       end
 
     # 属性在宏展开期直接设置，确保后续宏（manifest/routine/ok）
