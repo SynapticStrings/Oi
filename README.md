@@ -56,7 +56,7 @@ defmodule Barista.Grind do
   manifest(inputs: [:beans], outputs: [powder: :solid])
 
   routine beans_amount, opts do
-    IO.puts("⚙️  Grinding #{beans_amount}g beans...")
+    IO.puts("⚙️ Grinding #{beans_amount}g beans...")
     beans_amount * Keyword.get(opts, :ratio, 1) |> ok()
   end
 end
@@ -80,17 +80,18 @@ end
 ```elixir
 import Oi.Flowgraph
 
-graph =
-  new_flowchart()
-  |> add_step(Barista.Grind)
-  |> add_step(Barista.Brew, opts: [style: :latte])
-  |> connect({:grind, :powder}, {:brew, :powder})
-
-{:ok, compiled} = Oi.compile(graph)
+{:ok, compiled} = 
+  graph do
+    step(Barista.Grind)
+    step(Barista.Brew, opts: [style: :latte])
+    grind.powder ~> brew.powder
+  end |> Oi.compile()
 
 {:ok, result} = Oi.execute(compiled,
   data: %{grind: %{beans: 20}, brew: %{water: 200}}
 )
+# ⚙️ Grinding 20g beans...
+# 💧 Brewing latte coffee with 20g powder and 200ml water...
 
 {:ok, coffee} = Oi.Result.reify(result, {:brew, :coffee})
 IO.inspect(coffee)
