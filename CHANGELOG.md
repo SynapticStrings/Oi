@@ -2,12 +2,22 @@
 
 ## v0.6.1 (2026-06-29)
 
+### Added
+
+- `Oi.Flowgraph.many_step/1` — batch-add steps that share no options.
+  Expands to a block of `step/1` calls, each validated at compile time.
+
+      graph do
+        many_step [LoadPosts, LoadPages, LoadImages]
+        step Markdown, as: :md, opts: [...]
+        ...
+      end
+
 ### Fixed
 
-- `step` macro: changed `Code.ensure_loaded?` to `Code.ensure_compiled!` so that
-  cross-module references work correctly in multi-file projects (e.g. Greenhouse).
-  `Code.ensure_loaded?` returned false before the referenced module was compiled,
-  causing false-positive validation failures.
+- `step` macro validation: switched to two-tier `Code.ensure_compiled/1` approach
+  that works correctly in both regular `.ex` compilation (cross-file module resolution)
+  and `.exs` scripts (defers to runtime when in-file modules aren't yet compiled).
 
 ## v0.6.0 (2026-06-29)
 

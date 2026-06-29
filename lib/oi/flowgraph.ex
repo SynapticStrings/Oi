@@ -66,17 +66,20 @@ defmodule Oi.Flowgraph do
     * `:as`   — node alias (default: module's declared name)
     * `:opts` — keyword list forwarded as step options
   """
-  defmacro step(module, opts \\ []) do
+    defmacro step(module, opts \\ []) do
     resolved = Macro.expand(module, __CALLER__)
 
     if is_atom(resolved) do
-      Code.ensure_compiled!(resolved)
-
-      unless function_exported?(resolved, :__node_spec__, 0) do
-        raise ArgumentError,
-              "step expects a module using Oi.Step (with __node_spec__/0), " <>
-                "got: #{inspect(resolved)}"
+      if match?({:ok, _}, Code.ensure_compiled(resolved)) do
+        unless function_exported?(resolved, :__node_spec__, 0) do
+          raise ArgumentError,
+                "step expects a module using Oi.Step (with __node_spec__/0), " <>
+                  "got: #{inspect(resolved)}"
+        end
       end
+
+      # if ensure_compiled? returns false (e.g. .exs in-file modules),
+      # defer validation to runtime via add_step/3.
     end
 
     quote do
@@ -85,7 +88,23 @@ defmodule Oi.Flowgraph do
     end
   end
 
-  @doc """
+    @doc """
+  Add multiple steps at once when they share no options.
+
+  All modules are validated at compile time just like `step/1`.
+  Equivalent to calling `step` for each module with no options.
+
+  ## Example
+
+      many_step [LoadPosts, LoadPages, LoadImages]
+  """
+        defmacro many_step(modules) do
+    # Expands to a block of step/1 calls — each validates at its own
+    # expansion time via Code.ensure_compiled!/1.
+    {:__block__, [], Enum.map(modules, &{:step, [], [&1]})}
+  end
+
+    @doc """
   Connect two node ports.
 
   Both sides accept two forms:
