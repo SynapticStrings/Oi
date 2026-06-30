@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.6.3 (unreleased)
+## v0.6.3
 
 ### Changed
 
@@ -8,7 +8,7 @@
   `{:error, :invalid_data_format}` for unrecognised shapes instead of
   silently producing empty maps.  `build_drafting_inputs/2` propagates
   the error tuple.
-- `Oi.Adapters.orchid_stratum/1` → `orchid_stratum/2` — accepts
+- `orchid_stratum/1` → `orchid_stratum/2` — accepts
   `%Oi.Dispatch.Config{}` as second argument.  Same for
   `orchid_intervention_and_stratum`.  Callers in tests updated.
 - `unwrap_tuple/1` now handles list input — resolves `list param map ↔
@@ -57,8 +57,7 @@
   fixing graphs that were silently producing zero nodes.
 - `many_step` expansion: fully-qualified `Oi.Flowgraph.step/1` calls to
   guarantee resolution regardless of import context.
-- `Oi.Adapters.ensure_stratum_storage/1`: uses `Module.concat` + `apply/3`
-  to avoid compile-time warnings about undefined `OrchidStratum.*` modules
+- Avoid compile-time warnings about undefined `OrchidStratum.*` modules
   when `orchid_stratum` is not installed (optional dep).
 
 ## v0.6.0 (2026-06-29)
@@ -76,7 +75,7 @@
 - `Oi.Result.fetch/2` and `reify/2` now return `{:error, :not_found}` instead of bare
   `:error` — consistent with the rest of the codebase.
 - `Oi.Dispatch.Drafting.fetch/2` — same `{:error, :not_found}` change.
-- `Oi.Dispatch.Orchestrator.merge_results/2` no longer silently drops `nil` values from
+- `merge_results/2` in `Oi.Dispatch.Orchestrator` no longer silently drops `nil` values from
   step outputs.
 - `Oi.Compile.Bundle.compile_graph/2` now sorts bundles deterministically by cluster name.
 - `Oi.Runtime.Session.Instances` supervisor strategy changed from `one_for_all` to
@@ -153,7 +152,7 @@
 ### Breaking
 
 - `Oi.compile/1` (taking `Workspace`) replaced by `Oi.compile/2` (taking `graph, cluster`)
-- `Oi.dispatch/2` replaced by `Oi.execute/2` (taking `Compiled.t()`)
+- Oi.dispatch/2 replaced by `Oi.execute/2` (taking `Compiled.t()`)
 - `Oi.Workspace` struct removed
 - `Oi.Compiler.RecipeBundle` renamed to `Oi.Compile.Bundle`
 - `Oi.Workspace.Planning` renamed to `Oi.Compile.Planning`

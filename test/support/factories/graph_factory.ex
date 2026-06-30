@@ -3,7 +3,7 @@ defmodule OiTest.GraphFactory do
 
   import Oi.Topology.Graph
 
-  alias Oi.Topology.Graph.{Node, Edge}
+  alias Oi.Topology.Graph.{Edge, Node}
   alias OiTest.DummyOrchidStep, as: S
 
   def build_graph_v1 do

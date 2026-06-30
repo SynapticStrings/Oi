@@ -1,7 +1,8 @@
 defmodule Oi.Dispatch.Options do
+  @moduledoc "To resolve options during disptaching."
   # 负责 dispatch 时的选项
   alias Oi.Compiled
-  alias Oi.Topology.Graph.{Edge, PortRef, Node}
+  alias Oi.Topology.Graph.{Edge, Node, PortRef}
 
   # 1. ---- opts when Oi.execute ----
 
@@ -40,15 +41,7 @@ defmodule Oi.Dispatch.Options do
           | {:error, :invalid_data_format}
   def resolve_data(data, edges) when is_map(data) do
     with {:ok, flat} <- flatten_data(data) do
-      Enum.reduce(flat, {%{}, %{}}, fn {{node_id, port} = key, value}, {mem, intv} ->
-        case find_producer(edges, node_id, port) do
-          nil ->
-            {Map.put(mem, key, value), intv}
-
-          {producer_node, producer_port} ->
-            {mem, Map.put(intv, {producer_node, producer_port}, value)}
-        end
-      end)
+      Enum.reduce(flat, {%{}, %{}}, &split_by_edge(&1, &2, edges))
     end
   end
 
@@ -159,6 +152,16 @@ defmodule Oi.Dispatch.Options do
 
       true ->
         {:error, :invalid_data_format}
+    end
+  end
+
+  defp split_by_edge({{node_id, port} = key, value}, {mem, intv}, edges) do
+    case find_producer(edges, node_id, port) do
+      nil ->
+        {Map.put(mem, key, value), intv}
+
+      {producer_node, producer_port} ->
+        {mem, Map.put(intv, {producer_node, producer_port}, value)}
     end
   end
 

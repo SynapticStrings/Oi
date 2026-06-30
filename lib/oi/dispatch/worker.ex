@@ -7,7 +7,7 @@ defmodule Oi.Dispatch.Worker do
   """
 
   alias Oi.Compile.Bundle
-  alias Oi.Dispatch.{Drafting, Config, Options}
+  alias Oi.Dispatch.{Config, Drafting, Options}
 
   @type delta :: %{Oi.Dispatch.Drafting.io_key() => Orchid.Param.t()}
 

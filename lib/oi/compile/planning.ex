@@ -77,13 +77,7 @@ defmodule Oi.Compile.Planning do
       Map.new(bundles, fn b ->
         upstream =
           b.requires
-          |> Enum.flat_map(fn key ->
-            case producers[key] do
-              # external dependency
-              nil -> []
-              ids -> [ids]
-            end
-          end)
+          |> Enum.flat_map(&upstream_ids(&1, producers))
           |> Enum.uniq()
 
         {b.node_ids, upstream}
@@ -95,7 +89,13 @@ defmodule Oi.Compile.Planning do
     end
   end
 
-  # ---- Phase 2 internals ----
+  defp upstream_ids(key, producers) do
+    # external dependency produces nothing
+    case producers[key] do
+      nil -> []
+      ids -> [ids]
+    end
+  end
 
   defp assign_levels(bundles, deps) do
     ids = Enum.map(bundles, & &1.node_ids)

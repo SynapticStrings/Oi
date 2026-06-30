@@ -9,10 +9,6 @@ defmodule Oi.Application do
       # Storage processes.
       Oi.Runtime.Registry,
 
-      # Manage running calculate tasks.
-      # {Task.Supervisor, name: Oi.RenderTaskSup},
-      # used by Session? TBD
-
       # Manage sessions.
       {DynamicSupervisor, name: Oi.Runtime.SessionSupervisor, strategy: :one_for_one}
     ]

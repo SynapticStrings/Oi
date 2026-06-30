@@ -1,7 +1,7 @@
 defmodule Oi.Adapters.StratumTest do
   use ExUnit.Case
 
-  alias Orchid.{Recipe, Param}
+  alias Orchid.{Param, Recipe}
   alias Oi.Dispatch.Config, as: Conf
 
   # ── Dummy steps for caching ───────────────────────────

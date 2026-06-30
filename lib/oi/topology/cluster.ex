@@ -7,7 +7,7 @@ defmodule Oi.Topology.Cluster do
   serial + parallel process.
   """
 
-  alias Oi.Topology.Graph.{Node, Edge}
+  alias Oi.Topology.Graph.{Edge, Node}
 
   @type cluster_name :: atom() | String.t() | [cluster_name()]
 

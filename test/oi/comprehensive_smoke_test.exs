@@ -1,9 +1,9 @@
 defmodule Oi.ComprehensiveSmokeTest do
   use ExUnit.Case
 
+  alias Oi.Dispatch.Drafting
   alias Oi.Topology.Graph
   alias Oi.Topology.Graph.{Node, Edge}
-  alias Oi.Dispatch.Drafting
 
   import OiTest.GraphFactory
 

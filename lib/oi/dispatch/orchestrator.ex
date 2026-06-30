@@ -7,7 +7,7 @@ defmodule Oi.Dispatch.Orchestrator do
   """
 
   alias Oi.{Compile.Planning, Dispatch.Drafting}
-  alias Oi.Dispatch.Config
+  alias Oi.Dispatch.{Config, Worker}
 
   @spec dispatch(Planning.Plan.t(), Drafting.t(), Config.t()) ::
           {:ok, Drafting.t()} | {:error, term()}
@@ -22,7 +22,7 @@ defmodule Oi.Dispatch.Orchestrator do
 
   defp run_stage(%Planning.Stage{} = stage, drafting, %Config{} = conf) do
     worker_fn = fn bundle ->
-      Oi.Dispatch.Worker.run(bundle, drafting, conf)
+      Worker.run(bundle, drafting, conf)
     end
 
     case conf.executor.run(stage.tasks, worker_fn, conf.executor_opts) do

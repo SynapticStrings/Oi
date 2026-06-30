@@ -2,16 +2,18 @@ defmodule Oi.Runtime.Session.Instances do
   @moduledoc "Instance Supervisor."
   use Supervisor
 
+  alias Oi.Runtime.Session
+
   def start_link(oi_name, opts) do
     Supervisor.start_link(__MODULE__, {oi_name, opts},
-      name: Oi.Runtime.Session.instances_tuple(oi_name)
+      name: Session.instances_tuple(oi_name)
     )
   end
 
   @impl true
   def init({oi_name, opts}) do
     children = [
-      {Task.Supervisor, name: Oi.Runtime.Session.tasks_tuple(oi_name)}
+      {Task.Supervisor, name: Session.tasks_tuple(oi_name)}
     ]
 
     children =

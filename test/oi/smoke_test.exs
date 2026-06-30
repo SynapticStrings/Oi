@@ -1,7 +1,7 @@
 defmodule Oi.SmokeTest do
   use ExUnit.Case
-
   import OiTest.GraphFactory
+
   alias Oi.Compiled
   alias Oi.Compile.Bundle
   alias Oi.Topology.{Graph, Cluster}

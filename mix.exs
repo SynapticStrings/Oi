@@ -12,7 +12,7 @@ defmodule Oi.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       package: package(),
-      docs: [main: "readme", extras: ["README.md"]],
+      docs: [main: "readme", extras: ["README.md", "CHANGELOG.md"]],
       description: "Lightweight Orchid integration layer with pluggable execution strategies",
       test_coverage: [
         ignore_modules: [
@@ -36,11 +36,16 @@ defmodule Oi.MixProject do
 
   defp deps do
     [
+      # Orchid related.
       {:orchid, "~> 0.6"},
       {:orchid_symbiont, "~> 0.2", optional: true},
       {:orchid_intervention, "~> 0.2", optional: true},
       {:orchid_stratum, "~> 0.2", optional: true},
-      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
+
+      # Package
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 

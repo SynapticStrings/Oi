@@ -14,9 +14,8 @@ defmodule Oi do
   @type name :: String.t()
 
   alias Oi.{Compile, Compiled, Result}
-  alias Oi.Dispatch.{Config, Drafting, Orchestrator}
-  alias Oi.Topology.{Graph, Cluster}
-  alias Oi.Dispatch.Options
+  alias Oi.Dispatch.{Config, Drafting, Options, Orchestrator}
+  alias Oi.Topology.{Cluster, Graph}
 
   @doc """
   Compile graph into static bundles + plan.

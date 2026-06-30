@@ -1,4 +1,6 @@
 defmodule OiTest.DummyInterventionType do
+  @moduledoc false
+
   @behaviour OrchidIntervention.Operate
 
   @impl true

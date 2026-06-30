@@ -183,7 +183,7 @@ defmodule Oi.StepTest do
     end
 
     test "wrap_multi/2 数量不匹配报错" do
-      assert_raise ArgumentError, ~r/期望 2 个输出值/, fn ->
+      assert_raise ArgumentError, ~r/expected 2 outputs/, fn ->
         Oi.Step.wrap_multi([1], a: :int, b: :int)
       end
     end
@@ -202,7 +202,7 @@ defmodule Oi.StepTest do
 
   describe "compile-time validation" do
     test "缺少 :name" do
-      assert_raise RuntimeError, ~r/缺少 :name/, fn ->
+      assert_raise RuntimeError, ~r/requires :name option/, fn ->
         Code.eval_string("""
         defmodule OiStepTest.NoName do
           use Oi.Step, []
@@ -213,7 +213,7 @@ defmodule Oi.StepTest do
     end
 
     test "symbiont 未声明 models" do
-      assert_raise RuntimeError, ~r/必须.*声明非空的 :models/, fn ->
+      assert_raise RuntimeError, ~r/requires non-empty :models in manifest/, fn ->
         Code.eval_string("""
         defmodule OiStepTest.NoModels do
           use Oi.Step, name: :s, symbiont?: true
@@ -235,7 +235,7 @@ defmodule Oi.StepTest do
     end
 
     test "ok/1 在未声明 outputs 时报错" do
-      assert_raise RuntimeError, ~r/manifest 中声明 :outputs/, fn ->
+      assert_raise RuntimeError, ~r/requires :outputs declared in manifest/, fn ->
         Code.eval_string("""
         defmodule OiStepTest.BadOk do
           use Oi.Step, name: :s

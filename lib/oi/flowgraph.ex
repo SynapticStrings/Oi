@@ -1,4 +1,6 @@
 defmodule Oi.Flowgraph do
+  @moduledoc "A higher API for builing graph."
+
   alias Oi.Topology.Graph
 
   # ---- Functional API ----

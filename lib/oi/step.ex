@@ -182,6 +182,52 @@ defmodule Oi.Step do
   def err(reason), do: {:error, reason}
 
   # ─────────────────────────────────────────────────────────
+  #  Private: step validation & codegen helpers
+  # ─────────────────────────────────────────────────────────
+
+  defp validate_step!(nil, _type, _models) do
+    raise "use Oi.Step requires :name option"
+  end
+
+  defp validate_step!(_name, :symbiont, []) do
+    raise "symbiont? step requires non-empty :models in manifest"
+  end
+
+  defp validate_step!(_name, _type, _models), do: :ok
+
+  defp node_spec_ast(m, name, type, models) do
+    inputs = Module.get_attribute(m, :oi_inputs) || []
+    outputs = Module.get_attribute(m, :oi_outputs) || []
+    heavy? = Module.get_attribute(m, :oi_heavy?) || false
+
+    Macro.escape(%{
+      id: name,
+      container: m,
+      inputs: inputs,
+      outputs: Keyword.keys(outputs),
+      options: [],
+      extra: %{heavy?: heavy?, type: type, models: models}
+    })
+  end
+
+  defp callback_quotes(:pure, _models) do
+    quote do
+      @impl true
+      def nested?, do: false
+
+      @impl true
+      def validate_options(_opts), do: :ok
+    end
+  end
+
+  defp callback_quotes(:symbiont, models) do
+    quote do
+      @impl true
+      def required, do: unquote(models)
+    end
+  end
+
+  # ─────────────────────────────────────────────────────────
   #  __before_compile__ : remaining callbacks + node spec
   # ─────────────────────────────────────────────────────────
 
@@ -189,46 +235,13 @@ defmodule Oi.Step do
     m = env.module
     name = Module.get_attribute(m, :oi_name)
     type = Module.get_attribute(m, :oi_type) || :pure
-    inputs = Module.get_attribute(m, :oi_inputs) || []
-    outputs = Module.get_attribute(m, :oi_outputs) || []
     models = Module.get_attribute(m, :oi_models) || []
-    heavy? = Module.get_attribute(m, :oi_heavy?) || false
 
-    unless name do
-      raise "use Oi.Step requires :name option"
-    end
+    validate_step!(name, type, models)
 
-    if type == :symbiont and models == [] do
-      raise "symbiont? step requires non-empty :models in manifest"
-    end
+    node_spec = node_spec_ast(m, name, type, models)
 
-    node_spec =
-      Macro.escape(%{
-        id: name,
-        container: m,
-        inputs: inputs,
-        outputs: Keyword.keys(outputs),
-        options: [],
-        extra: %{heavy?: heavy?, type: type, models: models}
-      })
-
-    type_specific =
-      case type do
-        :pure ->
-          quote do
-            @impl true
-            def nested?, do: false
-
-            @impl true
-            def validate_options(_opts), do: :ok
-          end
-
-        :symbiont ->
-          quote do
-            @impl true
-            def required, do: unquote(models)
-          end
-      end
+    type_specific = callback_quotes(type, models)
 
     quote do
       unquote(type_specific)

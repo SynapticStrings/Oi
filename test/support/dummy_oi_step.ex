@@ -2,6 +2,8 @@ defmodule OiTest.DummyOiStep do
   @moduledoc false
 
   defmodule Greet do
+    @moduledoc false
+
     use Oi.Step, name: :greet
 
     manifest(
@@ -15,6 +17,8 @@ defmodule OiTest.DummyOiStep do
   end
 
   defmodule Exclaim do
+    @moduledoc false
+
     use Oi.Step, name: :exclaim
 
     manifest(
@@ -28,6 +32,8 @@ defmodule OiTest.DummyOiStep do
   end
 
   defmodule MultiOut do
+    @moduledoc false
+
     use Oi.Step, name: :multi
 
     manifest(
@@ -41,6 +47,8 @@ defmodule OiTest.DummyOiStep do
   end
 
   defmodule Failer do
+    @moduledoc false
+
     use Oi.Step, name: :failer
 
     manifest(
@@ -54,6 +62,8 @@ defmodule OiTest.DummyOiStep do
   end
 
   defmodule Predicter do
+    @moduledoc false
+
     use Oi.Step, name: :heavier, symbiont?: true
 
     manifest(

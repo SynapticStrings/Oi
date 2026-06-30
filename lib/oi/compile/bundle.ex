@@ -27,7 +27,7 @@ defmodule Oi.Compile.Bundle do
     node_ids: []
   ]
 
-  alias Oi.Topology.{Graph, Cluster}
+  alias Oi.Topology.{Cluster, Graph}
   alias Oi.Topology.Graph.PortRef
 
   @doc """
@@ -44,14 +44,7 @@ defmodule Oi.Compile.Bundle do
       bundles =
         sorted_node_ids
         |> Enum.group_by(&Map.get(node_colors, &1, :default_cluster))
-        |> Enum.sort_by(fn {cluster_name, _} ->
-          # Deterministic ordering: simple names sort before lists,
-          # lists sort by their sorted contents.
-          case cluster_name do
-            name when is_list(name) -> Enum.sort(name)
-            name -> name
-          end
-        end)
+        |> Enum.sort_by(fn {cluster_name, _} -> cluster_sort_key(cluster_name) end)
         |> Enum.map(fn {_cluster_name, node_ids} ->
           build_bundle(node_ids, graph)
         end)
@@ -59,6 +52,9 @@ defmodule Oi.Compile.Bundle do
       {:ok, bundles}
     end
   end
+
+  defp cluster_sort_key(name) when is_list(name), do: Enum.sort(name)
+  defp cluster_sort_key(name), do: name
 
   defp build_bundle(node_ids, graph) do
     steps =
