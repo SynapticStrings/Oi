@@ -12,7 +12,35 @@ defmodule Oi.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       package: package(),
-      docs: [main: "readme", extras: ["README.md", "CHANGELOG.md"]],
+      docs: [
+        main: "readme",
+        extras: ["README.md", "CHANGELOG.md"],
+        groups_for_modules: [
+          Core: [Oi, Oi.Compiled, Oi.Result],
+          DSL: [Oi.Flowgraph, Oi.Step],
+          Compile: [Oi.Compile.Bundle, Oi.Compile.Planning],
+          Dispatch: [
+            Oi.Dispatch.Config,
+            Oi.Dispatch.Drafting,
+            Oi.Dispatch.Orchestrator,
+            Oi.Dispatch.Worker
+          ],
+          Topology: [
+            Oi.Topology.Cluster,
+            Oi.Topology.Graph,
+            Oi.Topology.Graph.Node,
+            Oi.Topology.Graph.Edge,
+            Oi.Topology.Graph.PortRef
+          ],
+          Executors: [Oi.Executor, Oi.Executor.Sync, Oi.Executor.TaskSup],
+          Adapters: [Oi.Adapters],
+          Runtime: [
+            Oi.Runtime.Session,
+            Oi.Runtime.Session.Instances,
+            Oi.Runtime.Registry
+          ]
+        ]
+      ],
       description: "Lightweight Orchid integration layer with pluggable execution strategies",
       test_coverage: [
         ignore_modules: [

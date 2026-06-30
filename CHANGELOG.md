@@ -84,8 +84,7 @@
 
 ### Removed
 
-- `Oi.Dispatch.Options.assemble_run_opts/3` no longer auto-injects
-  `OrchidSymbiont.Hooks.Injector` into the hooks stack. Use
+- `OrchidSymbiont.Hooks.Injector` into the hooks stack. Use
   `Oi.Adapters.orchid_symbiont/1` in the `:orchid_adapters` chain instead.
 - `unwrap_interventions/1` in Options — replaced by `wrap_interventions_for_orchid/1`
   that does a single wrap instead of unwrap-then-rewrap.
@@ -112,7 +111,7 @@
   Oi.execute(compiled, data: %{{:step1, :in} => "foo"})
   ```
 
-- `Oi.Dispatch.Options.resolve_data/2` — splits unified data into memory/intervention
+- Splits unified data into memory/intervention
   maps based on graph topology (edge presence).
 - `Compiled` struct now carries `edges: MapSet.t(Edge.t())` for downstream port resolution.
 - Intervention type wrappers (`{:override, v}`, `{:offset, v}`, `{:custom, v}`) preserved
