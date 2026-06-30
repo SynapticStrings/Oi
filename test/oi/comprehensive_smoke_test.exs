@@ -243,8 +243,18 @@ defmodule Oi.ComprehensiveSmokeTest do
 
       graph =
         Graph.new()
-        |> Graph.add_node(%Node{id: :step1, container: S.DummyStep1, inputs: [:in], outputs: [:mid]})
-        |> Graph.add_node(%Node{id: :step2, container: S.DummyStep2, inputs: [:mid], outputs: [:out]})
+        |> Graph.add_node(%Node{
+          id: :step1,
+          container: S.DummyStep1,
+          inputs: [:in],
+          outputs: [:mid]
+        })
+        |> Graph.add_node(%Node{
+          id: :step2,
+          container: S.DummyStep2,
+          inputs: [:mid],
+          outputs: [:out]
+        })
         |> Graph.add_edge(Edge.new(:step1, :mid, :step2, :mid))
 
       {:ok, compiled} = Oi.compile(graph)
@@ -269,8 +279,18 @@ defmodule Oi.ComprehensiveSmokeTest do
 
       graph =
         Graph.new()
-        |> Graph.add_node(%Node{id: :step1, container: S.DummyStep1, inputs: [:in], outputs: [:mid]})
-        |> Graph.add_node(%Node{id: :step2, container: S.DummyStep2, inputs: [:mid], outputs: [:out]})
+        |> Graph.add_node(%Node{
+          id: :step1,
+          container: S.DummyStep1,
+          inputs: [:in],
+          outputs: [:mid]
+        })
+        |> Graph.add_node(%Node{
+          id: :step2,
+          container: S.DummyStep2,
+          inputs: [:mid],
+          outputs: [:out]
+        })
         |> Graph.add_edge(Edge.new(:step1, :mid, :step2, :mid))
 
       {:ok, compiled} = Oi.compile(graph)
@@ -292,6 +312,7 @@ defmodule Oi.ComprehensiveSmokeTest do
                Oi.Result.reify(result, "step2|out")
     end
   end
+
   # ── Multi-session isolation ──────────────────────────────
 
   describe "multi-tenant" do

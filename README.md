@@ -1,8 +1,8 @@
 # Oi
 
 Oi means Orchid integration — lightweight glue layer between
-[Orchid](https://hex.pm/packges/orchid) workflows and
-[OrchidSymbiont](https://hex.pm/packges/orchid_symbiont) runtimes.
+[Orchid](https://hex.pm/packages/orchid) workflows and
+[OrchidSymbiont](https://hex.pm/packages/orchid_symbiont) runtimes.
 
 <!-- MDOC -->
 
@@ -19,9 +19,14 @@ Oi means Orchid integration — lightweight glue layer between
 - **Data** — unified `data:` replaces the separate `inputs:` / `interventions:`.
   Ports with **no incoming edge** → memory (external inputs).
   Ports with **an incoming edge** → interventions (data originates inside the graph,
-  user is overriding it). Intervention types are declared via value wrappers
-  (`{:override, v}`, `{:offset, v}`, `{:custom, v}`). Plain values on intervention
-  ports are preserved as-is for downstream interpretation.
+  user is overriding it). Intervention values use the format `{type, value}`
+  where `type` is an atom naming the intervention strategy (`:override`, `:offset`,
+  or a custom module like `MyApp.MergeStrategy`). Plain values default to
+  `{:override, value}`.
+
+  When the payload is a tuple, wrap it explicitly in `%Orchid.Param{}` to
+  preserve type information:
+      {:override, %Orchid.Param{name: :key, type: {:tuple, 2}, payload: {1, 2}}}
 
   Two formats supported:
 
@@ -106,6 +111,17 @@ IO.inspect(coffee)
   data: %{
     step1: %{in: "hello"},
     step2: %{in: {:override, "forced_value"}}   # step2.in has upstream edge → intervention
+  },
+  orchid_opts: [
+    global_hooks_stack: [Orchid.Hook.ApplyInterventions]
+  ]
+)
+
+# Tuple payload — use %Orchid.Param{} to preserve type info
+{:ok, result} = Oi.execute(compiled,
+  data: %{
+    src: %{in: "hello"},
+    tgt: %{in: {:override, %Orchid.Param{name: :key, type: {:tuple, 2}, payload: {1, 2}}}}
   },
   orchid_opts: [
     global_hooks_stack: [Orchid.Hook.ApplyInterventions]

@@ -7,7 +7,10 @@ defmodule Oi.Dispatch.Drafting do
   """
 
   @type io_key :: Orchid.Step.io_key()
-  @type t :: %__MODULE__{memory: %{io_key() => Orchid.Param.t()}, interventions: %{io_key() => term()}}
+  @type t :: %__MODULE__{
+          memory: %{io_key() => Orchid.Param.t()},
+          interventions: %{io_key() => term()}
+        }
 
   defstruct memory: %{}, interventions: %{}
 

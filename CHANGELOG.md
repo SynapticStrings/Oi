@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.6.3 (unreleased)
+
+### Changed
+
+- `resolve_data/2` now validates input format explicitly. Returns
+  `{:error, :invalid_data_format}` for unrecognised shapes instead of
+  silently producing empty maps.  `build_drafting_inputs/2` propagates
+  the error tuple.
+- `Oi.Adapters.orchid_stratum/1` → `orchid_stratum/2` — accepts
+  `%Oi.Dispatch.Config{}` as second argument.  Same for
+  `orchid_intervention_and_stratum`.  Callers in tests updated.
+- `unwrap_tuple/1` now handles list input — resolves `list param map ↔
+  tuple data` mismatch.
+- `flatten_data/1` detects format per-entry instead of requiring
+  homogeneous maps.
+- Intervention value format documented: `{type, value}` where `type` is
+  an atom (`:override`, `:offset`, or a custom module). Plain values
+  default to `:override`.  Tuple payloads should use `%Orchid.Param{}`
+  to preserve type info.
+- `Oi.Step` docs translated from Chinese to English.
+
+### Fixed
+
+- README: broken hex.pm URLs (`packges` → `packages`).
+
+
 ## v0.6.2 (2026-06-29)
 
 ### Added

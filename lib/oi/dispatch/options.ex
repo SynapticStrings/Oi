@@ -37,40 +37,41 @@ defmodule Oi.Dispatch.Options do
   """
   @spec resolve_data(data(), MapSet.t(Edge.t())) ::
           {%{{Node.id(), Node.node_port()} => term()}, %{{Node.id(), Node.node_port()} => term()}}
+          | {:error, :invalid_data_format}
   def resolve_data(data, edges) when is_map(data) do
-    flat = flatten_data(data)
+    with {:ok, flat} <- flatten_data(data) do
+      Enum.reduce(flat, {%{}, %{}}, fn {{node_id, port} = key, value}, {mem, intv} ->
+        case find_producer(edges, node_id, port) do
+          nil ->
+            {Map.put(mem, key, value), intv}
 
-    Enum.reduce(flat, {%{}, %{}}, fn {{node_id, port} = key, value}, {mem, intv} ->
-      case find_producer(edges, node_id, port) do
-        nil ->
-          {Map.put(mem, key, value), intv}
-
-        {producer_node, producer_port} ->
-          {mem, Map.put(intv, {producer_node, producer_port}, value)}
-      end
-    end)
+          {producer_node, producer_port} ->
+            {mem, Map.put(intv, {producer_node, producer_port}, value)}
+        end
+      end)
+    end
   end
 
   def build_drafting_inputs(%Compiled{edges: edges}, opts) do
     data = Keyword.get(opts, :data, %{})
 
-    {memory_raw, interventions_raw} = resolve_data(data, edges)
+    with {memory_raw, interventions_raw} when is_map(memory_raw) <- resolve_data(data, edges) do
+      memory_io =
+        Map.new(memory_raw, fn {{n, p}, v} ->
+          {PortRef.to_orchid_key({:port, n, p}),
+           wrap_orchid_param(PortRef.to_orchid_key({:port, n, p}), v)}
+        end)
 
-    memory_io =
-      Map.new(memory_raw, fn {{n, p}, v} ->
-        {PortRef.to_orchid_key({:port, n, p}),
-         wrap_orchid_param(PortRef.to_orchid_key({:port, n, p}), v)}
-      end)
+      # Interventions stay raw — no Param wrapping here.
+      # Wrapping happens once in assemble_run_opts/3 when building the
+      # final {type, %Orchid.Param{}} tuple for Orchid's ApplyInterventions hook.
+      interventions_io =
+        Map.new(interventions_raw, fn {{n, p}, v} ->
+          {PortRef.to_orchid_key({:port, n, p}), v}
+        end)
 
-    # Interventions stay raw — no Param wrapping here.
-    # Wrapping happens once in assemble_run_opts/3 when building the
-    # final {type, %Orchid.Param{}} tuple for Orchid's ApplyInterventions hook.
-    interventions_io =
-      Map.new(interventions_raw, fn {{n, p}, v} ->
-        {PortRef.to_orchid_key({:port, n, p}), v}
-      end)
-
-    {memory_io, interventions_io}
+      {memory_io, interventions_io}
+    end
   end
 
   # 2. ---- Orchid options management ----
@@ -129,21 +130,35 @@ defmodule Oi.Dispatch.Options do
 
   # ---- Helpers ----
 
+  # Allow mixed data like
+  # %{{:a, :x} => 1, b: %{y: 2}}
   defp flatten_data(data) do
-    cond do
+    tuple_format? =
       Enum.all?(data, fn
         {{_node, _port}, _value} -> true
         _ -> false
-      end) ->
-        data
+      end)
+
+    nested_format? =
+      Enum.all?(data, fn
+        {node, ports} when (is_atom(node) or is_binary(node)) and is_map(ports) -> true
+        _ -> false
+      end)
+
+    cond do
+      tuple_format? ->
+        {:ok, data}
+
+      nested_format? ->
+        {:ok,
+         for {node, ports} <- data,
+             {port, val} <- ports,
+             into: %{} do
+           {{node, port}, val}
+         end}
 
       true ->
-        for {node, ports} <- data,
-            is_map(ports),
-            {port, val} <- ports,
-            into: %{} do
-          {{node, port}, val}
-        end
+        {:error, :invalid_data_format}
     end
   end
 

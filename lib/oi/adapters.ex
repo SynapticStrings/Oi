@@ -39,11 +39,12 @@ defmodule Oi.Adapters do
 
   No-op when `orchid_stratum` is not available.
   """
-  @spec orchid_stratum({Orchid.Recipe.t(), keyword()}) :: {Orchid.Recipe.t(), keyword()}
-  def orchid_stratum(acc) do
+  @spec orchid_stratum({Orchid.Recipe.t(), keyword()}, Oi.Dispatch.Config.t()) ::
+          {Orchid.Recipe.t(), keyword()}
+  def orchid_stratum(acc, %Oi.Dispatch.Config{} = conf) do
     if Code.ensure_loaded?(OrchidStratum.BypassHook) do
       acc
-      |> ensure_stratum_storage()
+      |> ensure_stratum_storage(conf)
       |> ensure_hook_prepended(OrchidStratum.BypassHook)
     else
       acc
@@ -77,7 +78,7 @@ defmodule Oi.Adapters do
   @doc """
   Prepends both hooks when available, respecting the layering order:
 
-      OrchidStratum => OrchidIntervention => ... => Core
+      OrchidIntervention => OrchidStratum => [exclipit hook stack] => Core
 
   Includes auto-init of ETS-backed Meta/Blob stores (same as
   `orchid_stratum/1`).
@@ -85,10 +86,11 @@ defmodule Oi.Adapters do
   Equivalent to `orchid_adapters: [&orchid_stratum/1, &orchid_intervention/1]`
   but in a single adapter call.
   """
-  @spec orchid_intervention_and_stratum({Orchid.Recipe.t(), keyword()}) :: {Orchid.Recipe.t(), keyword()}
-  def orchid_intervention_and_stratum(acc) do
+  @spec orchid_intervention_and_stratum({Orchid.Recipe.t(), keyword()}, Oi.Dispatch.Config.t()) ::
+          {Orchid.Recipe.t(), keyword()}
+  def orchid_intervention_and_stratum(acc, %Oi.Dispatch.Config{} = conf) do
     acc
-    |> orchid_stratum()
+    |> orchid_stratum(conf)
     |> orchid_intervention()
   end
 
@@ -107,7 +109,7 @@ defmodule Oi.Adapters do
   # Auto-initialises ETS-backed Meta/Blob stores in baggage unless
   # the user has already supplied their own adapters.
   # Uses `put_new_lazy` so we don't init tables unnecessarily.
-  defp ensure_stratum_storage({recipe, opts}) do
+  defp ensure_stratum_storage({recipe, opts}, _conf) do
     baggage = Keyword.get(opts, :baggage, %{}) || %{}
 
     baggage =

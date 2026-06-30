@@ -1,7 +1,7 @@
 defmodule Oi.MixProject do
   use Mix.Project
 
-  @version "0.6.2"
+  @version "0.6.3"
 
   def project do
     [
@@ -16,7 +16,7 @@ defmodule Oi.MixProject do
       description: "Lightweight Orchid integration layer with pluggable execution strategies",
       test_coverage: [
         ignore_modules: [
-          ~r/.*Test.*/,
+          ~r/.*Test.*/
         ]
       ]
     ]

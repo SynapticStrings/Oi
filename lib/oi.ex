@@ -48,8 +48,10 @@ defmodule Oi do
   Supports tuple-key format as well: `%{{:step, :port} => value}`.
 
   Ports with incoming edges → intervention; ports without → memory.
-  Values pass through as-is. Wrapped values ({:override, v}, {:offset, v}, {:custom, v})
-  are preserved for downstream intervention handling.
+  Intervention values use `{type, value}` where `type` is an atom naming the
+  intervention strategy (`:override`, `:offset`, or a custom module).
+  Plain values default to `{:override, value}`.
+  For tuple payloads, wrap in `%Orchid.Param{}` to preserve type info.
 
   ## Other options
 
@@ -60,15 +62,13 @@ defmodule Oi do
   """
   @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
   def execute(%Compiled{} = compiled, opts \\ []) do
-    {initial_memory_io, interventions_io} = Options.build_drafting_inputs(compiled, opts)
-
-    drafting = Drafting.new(initial_memory_io, interventions_io)
-    conf = prepare_config(opts)
-
-    case Orchestrator.dispatch(compiled.plan, drafting, conf) do
-      {:ok, final_drafting} ->
-        {:ok, Result.new(final_drafting.memory)}
-
+    with {initial_memory_io, interventions_io} when is_map(initial_memory_io) <-
+           Options.build_drafting_inputs(compiled, opts),
+         drafting = Drafting.new(initial_memory_io, interventions_io),
+         {:ok, final_drafting} <-
+           Orchestrator.dispatch(compiled.plan, drafting, prepare_config(opts)) do
+      {:ok, Result.new(final_drafting.memory)}
+    else
       {:error, _} = err ->
         err
     end

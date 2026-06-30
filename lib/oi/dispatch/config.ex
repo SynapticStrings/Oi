@@ -22,7 +22,7 @@ defmodule Oi.Dispatch.Config do
           executor_opts: keyword(),
           orchid_adapters: [
             ({Orchid.Recipe.t(), keyword()}, __MODULE__.t() ->
-                {Orchid.Recipe.t(), keyword()})
+               {Orchid.Recipe.t(), keyword()})
             | ({Orchid.Recipe.t(), keyword()} -> {Orchid.Recipe.t(), keyword()})
           ],
           orchid_baggage: map(),

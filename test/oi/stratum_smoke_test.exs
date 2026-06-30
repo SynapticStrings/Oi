@@ -2,6 +2,7 @@ defmodule Oi.Adapters.StratumTest do
   use ExUnit.Case
 
   alias Orchid.{Recipe, Param}
+  alias Oi.Dispatch.Config, as: Conf
 
   # ── Dummy steps for caching ───────────────────────────
 
@@ -30,7 +31,7 @@ defmodule Oi.Adapters.StratumTest do
       recipe = Recipe.new([])
       opts = []
 
-      {_recipe, adapted_opts} = Oi.Adapters.orchid_stratum({recipe, opts})
+      {_recipe, adapted_opts} = Oi.Adapters.orchid_stratum({recipe, opts}, %Conf{})
 
       # hook is prepended
       hooks = Keyword.get(adapted_opts, :global_hooks_stack, [])
@@ -46,6 +47,7 @@ defmodule Oi.Adapters.StratumTest do
 
     test "preserves user-supplied store configs" do
       recipe = Recipe.new([])
+
       opts = [
         baggage: %{
           meta_store: {MyMeta, :my_meta_ref},
@@ -53,7 +55,7 @@ defmodule Oi.Adapters.StratumTest do
         }
       ]
 
-      {_recipe, adapted_opts} = Oi.Adapters.orchid_stratum({recipe, opts})
+      {_recipe, adapted_opts} = Oi.Adapters.orchid_stratum({recipe, opts}, %Conf{})
 
       baggage = Keyword.get(adapted_opts, :baggage)
       assert baggage[:meta_store] == {MyMeta, :my_meta_ref}
@@ -62,13 +64,14 @@ defmodule Oi.Adapters.StratumTest do
 
     test "preserves partial config — only fills missing store" do
       recipe = Recipe.new([])
+
       opts = [
         baggage: %{
           meta_store: {MyMeta, :my_meta_ref}
         }
       ]
 
-      {_recipe, adapted_opts} = Oi.Adapters.orchid_stratum({recipe, opts})
+      {_recipe, adapted_opts} = Oi.Adapters.orchid_stratum({recipe, opts}, %Conf{})
 
       baggage = Keyword.get(adapted_opts, :baggage)
       assert baggage[:meta_store] == {MyMeta, :my_meta_ref}
@@ -82,7 +85,7 @@ defmodule Oi.Adapters.StratumTest do
 
       # We can't easily unload a module, so we test via
       # the public API shape: adapter always returns {recipe, opts}
-      {result_recipe, result_opts} = Oi.Adapters.orchid_stratum({recipe, opts})
+      {result_recipe, result_opts} = Oi.Adapters.orchid_stratum({recipe, opts}, %Conf{})
       assert result_recipe == recipe
       assert is_list(result_opts)
     end
@@ -93,7 +96,8 @@ defmodule Oi.Adapters.StratumTest do
       recipe = Recipe.new([])
       opts = []
 
-      {_recipe, adapted_opts} = Oi.Adapters.orchid_intervention_and_stratum({recipe, opts})
+      {_recipe, adapted_opts} =
+        Oi.Adapters.orchid_intervention_and_stratum({recipe, opts}, %Conf{})
 
       hooks = Keyword.get(adapted_opts, :global_hooks_stack, [])
 
@@ -128,7 +132,7 @@ defmodule Oi.Adapters.StratumTest do
 
     test "first run executes steps, second run is cache hit", %{recipe: recipe, inputs: inputs} do
       # First run — apply adapter to get opts
-      {recipe, opts} = Oi.Adapters.orchid_stratum({recipe, []})
+      {recipe, opts} = Oi.Adapters.orchid_stratum({recipe, []}, %Conf{})
 
       assert {:ok, results1} = Orchid.run(recipe, inputs, opts)
       assert_received :upper_executed
@@ -152,7 +156,7 @@ defmodule Oi.Adapters.StratumTest do
     end
 
     test "different inputs produce different cache keys", %{recipe: recipe, inputs: _inputs} do
-      {recipe, opts} = Oi.Adapters.orchid_stratum({recipe, []})
+      {recipe, opts} = Oi.Adapters.orchid_stratum({recipe, []}, %Conf{})
 
       # Run with "hello"
       assert {:ok, _} = Orchid.run(recipe, [Param.new(:in, :data, "hello")], opts)

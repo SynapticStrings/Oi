@@ -38,7 +38,7 @@ defmodule Oi.Step do
         end
       end
 
-  ## ok / err — Rust 风格结果构造器
+  ## ok / err — Rust-style result constructors
 
       routine text, opts do
         case validate(text) do
@@ -47,8 +47,8 @@ defmodule Oi.Step do
         end
       end
 
-  - 单输出：`ok(value)` → `{:ok, %Orchid.Param{}}`
-  - 多输出：`ok({a, b})` / `ok([a, b])` → `{:ok, [%Param{}, %Param{}]}`
+  - Single output: `ok(value)` → `{:ok, %Orchid.Param{}}`
+  - Multi-output: `ok({a, b})` / `ok([a, b])` → `{:ok, [%Param{}, %Param{}]}`
   """
 
   #  __using__ : name + symbiont?
@@ -59,7 +59,8 @@ defmodule Oi.Step do
 
     behaviour =
       case type do
-        :pure -> Orchid.Step
+        :pure ->
+          Orchid.Step
 
         :symbiont ->
           unless Code.ensure_loaded?(OrchidSymbiont.Step) do
@@ -75,15 +76,15 @@ defmodule Oi.Step do
           OrchidSymbiont.Step
       end
 
-    # 属性在宏展开期直接设置，确保后续宏（manifest/routine/ok）
-    # 在展开时能读到。
+    # Set attributes during macro expansion so subsequent macros
+    # (manifest/routine/ok) can read them during their own expansion.
     m = __CALLER__.module
 
     Module.put_attribute(m, :oi_name, name)
     Module.put_attribute(m, :oi_type, type)
     Module.put_attribute(m, :oi_symbiont, symbiont?)
 
-    # manifest 默认值（manifest/1 会覆盖）
+    # manifest defaults (overridden by manifest/1)
     Module.put_attribute(m, :oi_inputs, [])
     Module.put_attribute(m, :oi_outputs, [])
     Module.put_attribute(m, :oi_models, [])
@@ -105,12 +106,12 @@ defmodule Oi.Step do
   # ─────────────────────────────────────────────────────────
 
   @doc """
-  声明 step 元数据，必须在 `routine` 之前调用。
+  Declare step metadata. Must be called before `routine`.
 
-  - `:inputs`  — 输入端口名列表 (atoms)
-  - `:outputs` — keyword list，`port_name => param_type`
-  - `:models`  — symbiont step 的 model 名列表（symbiont? 时必填）
-  - `:heavy?`  — boolean，默认 false
+  - `:inputs`  — input port names (atoms)
+  - `:outputs` — keyword list, `port_name => param_type`
+  - `:models`  — model names for symbiont steps (required when `symbiont?`)
+  - `:heavy?`  — boolean, default `false`
   """
   defmacro manifest(opts) do
     unless is_list(opts) and Keyword.keyword?(opts) do
@@ -132,14 +133,15 @@ defmodule Oi.Step do
   # ─────────────────────────────────────────────────────────
 
   @doc """
-  定义执行逻辑，展开为 `run/2` (pure) 或 `run_with_model/3` (symbiont)。
+  Define execution logic, expands to `run/2` (pure) or `run_with_model/3`
+  (symbiont).
 
-  自动解包输入 Param：
-  - 单输入 `routine text, opts`     → payload 直接绑定
-  - 多输入 `routine [a, b], opts`   → list 解包
-  - 多输入 `routine {a, b}, opts`   → tuple 解包
+  Auto-unwraps input Params:
+  - Single input `routine text, opts`     → payload bound directly
+  - Multi-input `routine [a, b], opts`    → list unwrap
+  - Multi-input `routine {a, b}, opts`    → tuple unwrap
 
-  symbiont 的 `models` 绑定到 handler map（`models.encoder` 等）。
+  Symbiont `models` bound to handler map (e.g. `models.encoder`).
   """
   defmacro routine(input, opts_var, do: body) do
     ensure_type!(__CALLER__.module, :pure, 3)
@@ -155,11 +157,11 @@ defmodule Oi.Step do
   #  ok / err
   # ─────────────────────────────────────────────────────────
 
-  @doc "将值包装为 `{:ok, Param | [Param]}`。"
+  @doc "Wraps value as `{:ok, Param | [Param]}`."
   defmacro ok(value) do
     case Module.get_attribute(__CALLER__.module, :oi_outputs) || [] do
       [] ->
-        raise "ok/1 调用前必须先在 manifest 中声明 :outputs"
+        raise "ok/1 requires :outputs declared in manifest"
 
       [{name, type}] ->
         quote do
@@ -175,12 +177,12 @@ defmodule Oi.Step do
     end
   end
 
-  @doc "将 reason 包装为 `{:error, reason}`。"
-  # 不依赖编译期信息，做成普通函数即可（与 ok 对称地导出）。
+  @doc "Wraps reason as `{:error, reason}`."
+  # Does not need compile-time info — plain function exported alongside ok.
   def err(reason), do: {:error, reason}
 
   # ─────────────────────────────────────────────────────────
-  #  __before_compile__ : 剩余回调 + node spec
+  #  __before_compile__ : remaining callbacks + node spec
   # ─────────────────────────────────────────────────────────
 
   defmacro __before_compile__(env) do
@@ -193,11 +195,11 @@ defmodule Oi.Step do
     heavy? = Module.get_attribute(m, :oi_heavy?) || false
 
     unless name do
-      raise "use Oi.Step 缺少 :name 选项"
+      raise "use Oi.Step requires :name option"
     end
 
     if type == :symbiont and models == [] do
-      raise "symbiont? step 必须在 manifest 中声明非空的 :models"
+      raise "symbiont? step requires non-empty :models in manifest"
     end
 
     node_spec =
@@ -240,8 +242,8 @@ defmodule Oi.Step do
   #  Private: codegen
   # ─────────────────────────────────────────────────────────
 
-  # fun       : 目标函数名 (:run / :run_with_model)
-  # mid_args   : 介于输入 Param 与 opts 之间的参数 (symbiont 的 models_var)
+  # fun       : target function name (:run / :run_with_model)
+  # mid_args  : args between input Params and opts (symbiont's models_var)
   defp build_routine(fun, mid_args, input, opts_var, body) do
     case classify_input(input) do
       {:single, var} ->
@@ -286,18 +288,19 @@ defmodule Oi.Step do
         :ok
 
       nil ->
-        raise "routine 必须在 `use Oi.Step` 之后使用"
+        raise "routine must be called after `use Oi.Step`"
 
       other ->
         raise ArgumentError,
-              "routine/#{arity} 用于 #{expected} step，但当前类型为 #{other}" <>
-                "（由 use 的 symbiont? 决定）"
+              "routine/#{arity} is for #{expected} step, got type #{other}" <>
+                " (determined by `use` option `symbiont?`)"
     end
   end
 
-  # AST 形态判别。
-  # 注意：Elixir AST 中 2-tuple 是“裸” `{a, b}`，变量是 3-tuple `{:x, m, ctx}`，
-  # N-tuple 是 `{:{}, m, args}`，因此下面的顺序与 tuple_size 判断是安全的。
+  # AST shape classification.
+  # Note: in Elixir AST, 2-tuples are "bare" `{a, b}`, variables are
+  # 3-tuples `{:x, m, ctx}`, N-tuples are `{:{}, m, args}`.
+  # The ordering + tuple_size checks below are safe because of this.
   defp classify_input(ast) do
     cond do
       is_list(ast) -> {:list, ast}
@@ -320,7 +323,15 @@ defmodule Oi.Step do
   def unwrap_tuple(params) when is_tuple(params) do
     params
     |> Tuple.to_list()
-    |> Enum.map(fn %Orchid.Param{payload: p} -> p end)
+    |> unwrap_list()
+    |> List.to_tuple()
+  end
+
+  # To resolve
+  # list param map <-> tuple data inputs
+  def unwrap_tuple(params) when is_list(params) do
+    params
+    |> unwrap_list()
     |> List.to_tuple()
   end
 
@@ -331,8 +342,8 @@ defmodule Oi.Step do
   def wrap_multi(values, spec) when is_list(values) do
     unless length(values) == length(spec) do
       raise ArgumentError,
-            "ok/1 期望 #{length(spec)} 个输出值 " <>
-              "#{inspect(Keyword.keys(spec))}，实际得到 #{length(values)} 个"
+            "ok/1 expected #{length(spec)} outputs " <>
+              "#{inspect(Keyword.keys(spec))}, got #{length(values)}"
     end
 
     values

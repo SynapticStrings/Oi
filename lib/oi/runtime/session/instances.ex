@@ -16,9 +16,11 @@ defmodule Oi.Runtime.Session.Instances do
 
     children =
       if Code.ensure_loaded?(OrchidSymbiont.Runtime) do
-        [{OrchidSymbiont.Runtime,
-          scope_id: oi_name,
-          strict_mode: Keyword.get(opts, :orchid_symbiont_strict, false)} | children]
+        [
+          {OrchidSymbiont.Runtime,
+           scope_id: oi_name, strict_mode: Keyword.get(opts, :orchid_symbiont_strict, false)}
+          | children
+        ]
       else
         children
       end

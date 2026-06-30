@@ -70,7 +70,7 @@ defmodule Oi.Flowgraph do
     * `:as`   — node alias (default: module's declared name)
     * `:opts` — keyword list forwarded as step options
   """
-    defmacro step(module, opts \\ []) do
+  defmacro step(module, opts \\ []) do
     resolved = Macro.expand(module, __CALLER__)
 
     Code.ensure_compiled!(resolved)
@@ -87,7 +87,7 @@ defmodule Oi.Flowgraph do
     end
   end
 
-    @doc """
+  @doc """
   Add multiple steps at once when they share no options.
 
   All modules are validated at compile time just like `step/1`.
@@ -97,7 +97,7 @@ defmodule Oi.Flowgraph do
 
       many_step [LoadPosts, LoadPages, LoadImages]
   """
-        defmacro many_step(modules) do
+  defmacro many_step(modules) do
     {:__block__, [], Enum.map(modules, &build_step_ast/1)}
   end
 
@@ -107,7 +107,7 @@ defmodule Oi.Flowgraph do
     end
   end
 
-    @doc """
+  @doc """
   Connect two node ports.
 
   Both sides accept two forms:
