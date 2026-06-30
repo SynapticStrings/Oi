@@ -14,7 +14,7 @@ defmodule Oi do
   @type name :: String.t()
 
   alias Oi.{Compile, Compiled, Result}
-  alias Oi.Dispatch.{Config, Drafting, Options, Orchestrator}
+  alias Oi.Dispatch.{Config, Orchestrator}
   alias Oi.Topology.{Cluster, Graph}
 
   @doc """
@@ -61,11 +61,10 @@ defmodule Oi do
   """
   @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
   def execute(%Compiled{} = compiled, opts \\ []) do
-    with {initial_memory_io, interventions_io} when is_map(initial_memory_io) <-
-           Options.build_drafting_inputs(compiled, opts),
-         drafting = Drafting.new(initial_memory_io, interventions_io),
-         {:ok, final_drafting} <-
-           Orchestrator.dispatch(compiled.plan, drafting, prepare_config(opts)) do
+    conf = Config.new(opts)
+
+    with {:ok, drafting} <- Config.build_drafting(conf, compiled),
+         {:ok, final_drafting} <- Orchestrator.dispatch(compiled.plan, drafting, conf) do
       {:ok, Result.new(final_drafting.memory)}
     else
       {:error, _} = err ->
@@ -86,15 +85,5 @@ defmodule Oi do
     with {:ok, compiled} <- compile(graph, cluster) do
       execute(compiled, execute_opts)
     end
-  end
-
-  defp prepare_config(opts) do
-    baggage = opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{})
-
-    Config.new(
-      opts
-      |> Keyword.drop([:interventions, :orchid_baggage, :data])
-      |> Keyword.put(:orchid_baggage, baggage)
-    )
   end
 end

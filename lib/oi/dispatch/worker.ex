@@ -7,7 +7,7 @@ defmodule Oi.Dispatch.Worker do
   """
 
   alias Oi.Compile.Bundle
-  alias Oi.Dispatch.{Config, Drafting, Options}
+  alias Oi.Dispatch.{Config, Drafting}
 
   @type delta :: %{Oi.Dispatch.Drafting.io_key() => Orchid.Param.t()}
 
@@ -15,7 +15,7 @@ defmodule Oi.Dispatch.Worker do
           {:ok, delta()} | {:error, term()}
   def run(%Bundle{} = bundle, %Drafting{} = drafting, %Config{} = conf) do
     with {:ok, dynamic_inputs} <- resolve_dependencies(bundle, drafting) do
-      base_opts = Options.assemble_run_opts(conf.orchid_opts, conf, drafting)
+      base_opts = Config.assemble_run_opts(conf, drafting)
       {recipe, final_opts} = Config.apply_orchid_adapters(conf, {bundle.recipe, base_opts})
       run_orchid(recipe, dynamic_inputs, final_opts)
     end

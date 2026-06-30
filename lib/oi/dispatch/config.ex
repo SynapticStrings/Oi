@@ -29,14 +29,27 @@ defmodule Oi.Dispatch.Config do
           orchid_opts: keyword(),
           concurrency: pos_integer(),
           timeout: timeout(),
+          data: map(),
+          data: data(),
           name: Oi.name() | nil
         }
+
+  @typedoc """
+  Unified user-facing data for `Oi.execute/2`.
+
+  Two formats supported:
+
+    - Tuple keys: `%{{:step1, :in} => "foo", {:step2, :out} => {:override, "bar"}}`
+    - Nested: `%{step1: %{in: "foo"}, step2: %{out: {:override, "bar"}}}`
+  """
+  @type data :: map()
 
   defstruct executor: Oi.Executor.Sync,
             executor_opts: [],
             orchid_adapters: [],
             orchid_baggage: %{},
             orchid_opts: [],
+            data: %{},
             concurrency: System.schedulers_online(),
             timeout: :infinity,
             name: nil
@@ -63,9 +76,35 @@ defmodule Oi.Dispatch.Config do
       orchid_adapters: Keyword.get(opts, :orchid_adapters, []),
       orchid_baggage: opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{}),
       orchid_opts: Keyword.get(opts, :orchid_opts, []),
+      data: Keyword.get(opts, :data, %{}),
       concurrency: concurrency,
       timeout: timeout
     }
+  end
+
+  @doc """
+  Build a `Drafting` from user `:data` and compiled graph topology.
+  Delegates to `Options.build_drafting_inputs/2`.
+  """
+  @spec build_drafting(t(), Oi.Compiled.t()) ::
+          {:ok, Oi.Dispatch.Drafting.t()} | {:error, term()}
+  def build_drafting(%__MODULE__{} = conf, %Oi.Compiled{} = compiled) do
+    case Oi.Dispatch.Options.build_drafting_inputs(compiled, conf) do
+      {memory_io, interventions_io} when is_map(memory_io) ->
+        {:ok, Oi.Dispatch.Drafting.new(memory_io, interventions_io)}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  @doc """
+  Assemble keyword opts for `Orchid.run/3`.
+  Delegates to `Options.assemble_run_opts/3`.
+  """
+  @spec assemble_run_opts(t(), Oi.Dispatch.Drafting.t()) :: keyword()
+  def assemble_run_opts(%__MODULE__{} = conf, %Oi.Dispatch.Drafting{} = drafting) do
+    Oi.Dispatch.Options.assemble_run_opts(conf.orchid_opts, conf, drafting)
   end
 
   @doc """

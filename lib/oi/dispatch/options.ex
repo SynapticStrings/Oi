@@ -1,42 +1,19 @@
 defmodule Oi.Dispatch.Options do
-  @moduledoc "To resolve options during disptaching."
-  # 负责 dispatch 时的选项
+  @moduledoc false
+  # Internal: data resolution and options assembly for Oi.Dispatch.Config.
   alias Oi.Compiled
   alias Oi.Topology.Graph.{Edge, Node, PortRef}
 
   # 1. ---- opts when Oi.execute ----
 
-  @typedoc """
-  Unified user-facing data for Oi.execute/2.
-
-  Replaces the separate `:inputs` / `:interventions` opts.
-
-  ## Format A — tuple keys
-      %{{:step1, :in} => "foo", {:step2, :result} => {:override, "bar"}}
-
-  ## Format B — nested
-      %{step1: %{in: "foo"}, step2: %{result: {:override, "bar"}}}
-  """
-  @type data ::
-          %{
-            optional({Node.id(), Node.node_port()}) => term()
-          }
-          | %{
-              optional(Node.id()) => %{
-                optional(Node.node_port()) => term()
-              }
-            }
-
-  @doc """
-  Splits unified `data` into `{memory, interventions}` by topology.
-
-  For each `{node, port}`:
-    * has incoming edge → intervention (data originates inside the graph)
-    * no incoming edge  → memory (external input, no upstream producer)
-
-  Values pass through as-is — no wrapping, no io_key conversion.
-  """
-  @spec resolve_data(data(), MapSet.t(Edge.t())) ::
+  # Splits unified `data` into `{memory, interventions}` by topology.
+  #
+  # For each `{node, port}`:
+  #   * has incoming edge → intervention (data originates inside the graph)
+  #   * no incoming edge  → memory (external input, no upstream producer)
+  #
+  # Values pass through as-is — no wrapping, no io_key conversion.
+  @spec resolve_data(Oi.Dispatch.Config.data(), MapSet.t(Edge.t())) ::
           {%{{Node.id(), Node.node_port()} => term()}, %{{Node.id(), Node.node_port()} => term()}}
           | {:error, :invalid_data_format}
   def resolve_data(data, edges) when is_map(data) do
@@ -45,8 +22,7 @@ defmodule Oi.Dispatch.Options do
     end
   end
 
-  def build_drafting_inputs(%Compiled{edges: edges}, opts) do
-    data = Keyword.get(opts, :data, %{})
+  def build_drafting_inputs(%Compiled{edges: edges}, %Oi.Dispatch.Config{data: data}) do
 
     with {memory_raw, interventions_raw} when is_map(memory_raw) <- resolve_data(data, edges) do
       memory_io =
@@ -69,13 +45,11 @@ defmodule Oi.Dispatch.Options do
 
   # 2. ---- Orchid options management ----
 
-  @doc """
-  Assemble the keyword list passed to `Orchid.run/3`.
-
-  Merges interventions from Drafting, user baggage from Config, and resolves
-  `scope_id`.  Does NOT inject OrchidSymbiont.Hooks.Injector — use
-  `Oi.Adapters.orchid_symbiont/1` in the `:orchid_adapters` chain instead.
-  """
+  # Assemble the keyword list passed to `Orchid.run/3`.
+  #
+  # Merges interventions from Drafting, user baggage from Config, and resolves
+  # `scope_id`.  Does NOT inject OrchidSymbiont.Hooks.Injector — use
+  # `Oi.Adapters.orchid_symbiont/1` in the `:orchid_adapters` chain instead.
   @spec assemble_run_opts(keyword(), Oi.Dispatch.Config.t(), Oi.Dispatch.Drafting.t()) ::
           keyword()
   def assemble_run_opts(opts, conf, drafting) do
