@@ -1,9 +1,9 @@
 defmodule Oi.Adapters do
   @moduledoc """
-  Ready-to-use orchid_adapters.
+  Ready-to-use orchid adapters.
 
   Pass these as `orchid_adapters: [&Oi.Adapters.orchid_intervention/1]`
-  in Oi.execute/2 opts or Config.new/1.
+  in `Oi.execute/2` options or `Oi.Dispatch.Config.new/1`.
   """
 
   # ---- OrchidIntervention ----

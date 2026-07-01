@@ -1,6 +1,8 @@
 # Oi
 
-Oi means Orchid integration — lightweight glue layer between
+> *Oi means Orchid integration.*
+
+Lightweight glue layer between
 [Orchid](https://hex.pm/packages/orchid) workflows and
 [OrchidSymbiont](https://hex.pm/packages/orchid_symbiont) runtimes.
 

@@ -1,7 +1,5 @@
 defmodule Oi do
   @moduledoc """
-  Oi means Orchid integration.
-
   Oi provides a simple API for [Orchid](https://hex.pm/packages/orchid)
   and ready-to-use functions for bind [OrchidSymbiont](https://hex.pm/packages/orchid_symbiont), [OrchidStratum](https://hex.pm/packages/orchid_stratum)
   and [OrchidIntervention](https://hex.pm/packages/orchid_intervention).
