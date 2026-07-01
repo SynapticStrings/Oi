@@ -7,9 +7,9 @@
 - `Oi.Dispatch.Config` now owns `data` type and drafts construction:
   `build_drafting/2` and `assemble_run_opts/2` moved from `Oi.execute/2`
   into Config, reducing the entry module to delegation-only.
-- `Oi.Dispatch.Options` marked `@moduledoc false` — internal-only,
+- `Options` new internal-only,
   called exclusively through Config.
-- Worker calls `Config.assemble_run_opts/2` instead of reaching into
+- Worker calls `Oi.Dispatch.Config.assemble_run_opts/2` instead of reaching into
   Options directly.
 
 ### Docs
