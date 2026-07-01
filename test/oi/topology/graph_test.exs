@@ -199,7 +199,8 @@ defmodule Oi.Topology.GraphTest do
         |> add_edge(Edge.new(:a, :out, :b, :in))
         |> add_edge(Edge.new(:b, :out, :a, :in))
 
-      assert topological_sort(graph) == {:error, :cycle_detected}
+      {:error, nodes} = topological_sort(graph)
+      assert Enum.sort(nodes) == [:a, :b]
     end
   end
 end

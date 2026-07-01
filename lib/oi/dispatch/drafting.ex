@@ -43,8 +43,8 @@ defmodule Oi.Dispatch.Drafting do
   end
 
   @doc """
-  按 keys 投影出一个 param_map。区分『缺失』和『值为 nil』：
-  缺失返回 error，nil 是合法值照常返回。
+  Project keys from memory.  Distinguishes \"missing\" from \"value is nil\":
+  missing keys return an error, nil values are returned as-is.
   """
   @spec resolve_many(t(), [io_key()]) ::
           {:ok, %{io_key() => Orchid.Param.t()}} | {:error, {:unresolved, [io_key()]}}

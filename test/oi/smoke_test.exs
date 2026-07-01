@@ -4,8 +4,8 @@ defmodule Oi.SmokeTest do
 
   alias Oi.Compiled
   alias Oi.Compile.Bundle
-  alias Oi.Topology.{Graph, Cluster}
-  alias Oi.Topology.Graph.{Node, Edge}
+  alias Oi.Topology.{Cluster, Graph}
+  alias Oi.Topology.Graph.{Edge, Node}
 
   describe "compile (phase 1)" do
     test "compile_graph without cluster produces single bundle" do
@@ -57,7 +57,7 @@ defmodule Oi.SmokeTest do
         |> Graph.add_edge(Edge.new(:a, :out, :b, :in))
         |> Graph.add_edge(Edge.new(:b, :out, :a, :in))
 
-      assert {:error, :cycle_detected} = Bundle.compile_graph(graph)
+      assert {:error, [cycle_detected: [:a, :b]]} = Bundle.compile_graph(graph)
     end
   end
 

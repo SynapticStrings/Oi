@@ -87,7 +87,7 @@ defmodule Oi do
   Pure topology — no interventions. Reusable across different
   intervention sets and inputs.
   """
-  @spec compile(Graph.t(), Cluster.t()) :: {:ok, Compiled.t()} | {:error, :cycle_detected}
+  @spec compile(Graph.t(), Cluster.t()) :: {:ok, Compiled.t()} | {:error, term()}
   def compile(graph, cluster \\ %Oi.Topology.Cluster{}) do
     with {:ok, bundles} <- Compile.Bundle.compile_graph(graph, cluster),
          {:ok, plan} <- Compile.Planning.build(bundles) do
@@ -140,10 +140,35 @@ defmodule Oi do
     end
   end
 
-  # All-in-one
-  #
-  # 1. extract cluster via key `:cluster`
-  # 2. other options same as execute/2
+  @doc """
+  All-in-one convenience: compile + execute in a single call.
+
+  Accepts either a `Graph.t()` or a `Compiled.t()`.  When given a graph,
+  extracts `:cluster` from `opts` (defaults to empty `%Cluster{}`),
+  compiles, then executes with the remaining options.  When given a
+  compiled struct, delegates directly to `execute/2`.
+
+  ## Options
+
+  Same as `execute/2`, plus:
+
+    * `:cluster` — `Oi.Topology.Cluster.t()` (default: `%Cluster{}`), only
+      used when `graph_or_compiled` is a `Graph.t()`
+
+  ## Examples
+
+      graph = graph do
+        step(MyStep)
+      end
+
+      {:ok, result} = Oi.run(graph, data: %{my_step: %{in: "hello"}})
+
+      # With explicit cluster
+      {:ok, result} = Oi.run(graph,
+        data: %{my_step: %{in: "hello"}},
+        cluster: %Cluster{node_colors: %{my_step: :fast}}
+      )
+  """
   @spec run(Compiled.t() | Graph.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
   def run(graph_or_compiled, opts \\ [])
 

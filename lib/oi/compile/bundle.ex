@@ -36,9 +36,9 @@ defmodule Oi.Compile.Bundle do
   Reusable across different intervention sets.
   """
   @spec compile_graph(Graph.t(Orchid.Step.implementation()), Cluster.t()) ::
-          {:error, :cycle_detected} | {:ok, [t()]}
+          {:error, term()} | {:ok, [t()]}
   def compile_graph(graph, cluster_decl \\ %Cluster{}) do
-    with {:ok, sorted_node_ids} <- Graph.topological_sort(graph) do
+    with {:ok, sorted_node_ids} <- Graph.validate(graph) do
       node_colors = Cluster.paint_graph(sorted_node_ids, graph.edges, cluster_decl)
 
       bundles =

@@ -18,13 +18,16 @@ defmodule Oi.Dispatch.Config do
     * `:name`           — optional scope name, merged into baggage as `:scope_id`
   """
 
+  alias Oi.Dispatch.{Drafting, Options}
+
   @typedoc """
   Unified user-facing data for `Oi.execute/2`.
 
-  Two formats supported:
+  See `Oi.Dispatch` module docs for the full data format specification.
+  Two shapes supported:
 
-    - Tuple keys: `%{{:step1, :in} => "foo", {:step2, :out} => {:override, "bar"}}`
-    - Nested: `%{step1: %{in: "foo"}, step2: %{out: {:override, "bar"}}}`
+    - Nested: `%{step: %{port: value}}`
+    - Tuple keys: `%{{:step, :port} => value}`
   """
   @type data :: map()
 
@@ -84,11 +87,11 @@ defmodule Oi.Dispatch.Config do
   Delegates to `Options.build_drafting_inputs/2`.
   """
   @spec build_drafting(data(), Oi.Compiled.t()) ::
-          {:ok, Oi.Dispatch.Drafting.t()} | {:error, term()}
+          {:ok, Drafting.t()} | {:error, term()}
   def build_drafting(data, %Oi.Compiled{} = compiled) do
-    case Oi.Dispatch.Options.build_drafting_inputs(compiled, data) do
+    case Options.build_drafting_inputs(compiled, data) do
       {memory_io, interventions_io} when is_map(memory_io) ->
-        {:ok, Oi.Dispatch.Drafting.new(memory_io, interventions_io)}
+        {:ok, Drafting.new(memory_io, interventions_io)}
 
       {:error, _} = err ->
         err
@@ -99,9 +102,9 @@ defmodule Oi.Dispatch.Config do
   Assemble keyword opts for `Orchid.run/3`.
   Delegates to `Options.assemble_run_opts/3`.
   """
-  @spec assemble_run_opts(t(), Oi.Dispatch.Drafting.t()) :: keyword()
-  def assemble_run_opts(%__MODULE__{} = conf, %Oi.Dispatch.Drafting{} = drafting) do
-    Oi.Dispatch.Options.assemble_run_opts(conf.orchid_opts, conf, drafting)
+  @spec assemble_run_opts(t(), Drafting.t()) :: keyword()
+  def assemble_run_opts(%__MODULE__{} = conf, %Drafting{} = drafting) do
+    Options.assemble_run_opts(conf.orchid_opts, conf, drafting)
   end
 
   @doc """

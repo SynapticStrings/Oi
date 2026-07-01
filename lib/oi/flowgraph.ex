@@ -64,8 +64,9 @@ defmodule Oi.Flowgraph do
   Add a step to the accumulated graph.
 
   The module must `use Oi.Step` (i.e. expose `__node_spec__/0`).
-  Validated at compile time — raises `ArgumentError` if the module
-  does not implement the expected contract.
+  Validation happens at runtime in `add_step/3` — no eager compile-time
+  checks during macro expansion.  This avoids cross-file compilation
+  ordering issues.
 
   ## Options
 
@@ -74,14 +75,6 @@ defmodule Oi.Flowgraph do
   """
   defmacro step(module, opts \\ []) do
     resolved = Macro.expand(module, __CALLER__)
-
-    Code.ensure_compiled!(resolved)
-
-    unless function_exported?(resolved, :__node_spec__, 0) do
-      raise ArgumentError,
-            "#{inspect(resolved)} does not export __node_spec__/0. " <>
-              "Did it use Oi.Step?"
-    end
 
     quote do
       var!(graph_acc) =
@@ -92,7 +85,6 @@ defmodule Oi.Flowgraph do
   @doc """
   Add multiple steps at once when they share no options.
 
-  All modules are validated at compile time just like `step/1`.
   Equivalent to calling `step` for each module with no options.
 
   ## Example

@@ -2,7 +2,7 @@ defmodule OiTest do
   use ExUnit.Case
 
   alias Oi.Topology.Graph
-  alias Oi.Topology.Graph.{Node, Edge}
+  alias Oi.Topology.Graph.{Edge, Node}
   alias Oi.Dispatch.Options
   import OiTest.GraphFactory
 

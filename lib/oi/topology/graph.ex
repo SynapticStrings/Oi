@@ -203,7 +203,78 @@ defmodule Oi.Topology.Graph do
     Map.get(graph.out_edges, node_id, [])
   end
 
-  @spec topological_sort(t()) :: {:ok, [Node.id()]} | {:error, :cycle_detected}
+  @doc """
+  Validate graph structure and return topological order on success.
+
+  Returns `{:ok, sorted_node_ids}` or `{:error, reasons}` where
+  `reasons` is a list of `{tag, detail}` tuples.
+
+  Checks:
+    * No orphan edges — `from_node` / `to_node` must exist in `graph.nodes`
+    * Port membership — `from_port` must be in the source node's `outputs`,
+      `to_port` must be in the target node's `inputs`
+    * No cycles (topological sort)
+  """
+  @spec validate(t()) :: {:ok, [Node.id()]} | {:error, [{atom(), term()}]}
+  def validate(%__MODULE__{} = graph) do
+    errors =
+      []
+      |> check_orphan_edges(graph)
+      |> check_port_membership(graph)
+
+    case errors do
+      [] ->
+        # Structural checks passed — now topological sort (detects cycles)
+        case topological_sort(graph) do
+          {:ok, sorted} -> {:ok, sorted}
+          {:error, cyclic_nodes} -> {:error, [{:cycle_detected, cyclic_nodes}]}
+        end
+
+      errs ->
+        {:error, Enum.reverse(errs)}
+    end
+  end
+
+  defp check_orphan_edges(errors, graph) do
+    Enum.reduce(graph.edges, errors, fn edge, acc ->
+      cond do
+        not Map.has_key?(graph.nodes, edge.from_node) ->
+          [{:orphan_edge, {:missing_from_node, edge}} | acc]
+
+        not Map.has_key?(graph.nodes, edge.to_node) ->
+          [{:orphan_edge, {:missing_to_node, edge}} | acc]
+
+        true ->
+          acc
+      end
+    end)
+  end
+
+  defp check_port_membership(errors, graph) do
+    Enum.reduce(graph.edges, errors, fn edge, acc ->
+      acc
+      |> check_port(graph, edge.from_node, edge.from_port, :outputs, edge)
+      |> check_port(graph, edge.to_node, edge.to_port, :inputs, edge)
+    end)
+  end
+
+  defp check_port(errors, graph, node_id, port, direction, edge) do
+    case Map.get(graph.nodes, node_id) do
+      nil ->
+        errors
+
+      node ->
+        ports = Map.get(node, direction, [])
+
+        if port in ports do
+          errors
+        else
+          [{:port_not_found, {direction, node_id, port, edge}} | errors]
+        end
+    end
+  end
+
+  @spec topological_sort(t()) :: {:ok, [Node.id()]} | {:error, [Node.id()]}
   def topological_sort(%__MODULE__{} = graph) do
     in_degrees =
       Map.new(graph.nodes, fn {id, _node} ->
@@ -218,11 +289,16 @@ defmodule Oi.Topology.Graph do
     do_topo_sort(zero_in_degree_nodes, in_degrees, graph.out_edges, map_size(graph.nodes), [])
   end
 
-  defp do_topo_sort([], _in_degrees, _out_edges, total_nodes, sorted_acc) do
+  defp do_topo_sort([], in_degrees, _out_edges, total_nodes, sorted_acc) do
     if length(sorted_acc) == total_nodes do
       {:ok, Enum.reverse(sorted_acc)}
     else
-      {:error, :cycle_detected}
+      cyclic =
+        in_degrees
+        |> Enum.filter(fn {_id, degree} -> degree > 0 end)
+        |> Enum.map(fn {id, _degree} -> id end)
+
+      {:error, cyclic}
     end
   end
 
