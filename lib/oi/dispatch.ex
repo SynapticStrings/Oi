@@ -18,22 +18,22 @@ defmodule Oi.Dispatch do
         ├─ for each Stage (barrier-synced): ──────────────────────────┐
         │     Executor.run(stage_tasks, &Worker.run/1, executor_opts) │
         │         │                                                   │
-        │         └─ Worker: resolve deps → adapters → Orchid.run    │
-        │                                                            │
-        ├─ merge deltas back into Drafting  ◄────────────────────────┘
+        │         └─ Worker: resolve deps → adapters → Orchid.run     │
+        │                                                             │
+        ├─ merge deltas back into Drafting  ◄─────────────────────────┘
         │
         ▼
       Result.new(drafting.memory)
 
   ## Module responsibilities
 
-  | Module          | Mutable? | Role |
-  |-----------------|----------|------|
-  | `Config`        | no       | Executor, adapters, timeouts, baggage |
-  | `Drafting`      | yes      | Per-dispatch state: memory + interventions |
-  | `Orchestrator`  | —        | Stage loop: fan-out → collect → barrier |
-  | `Worker`        | —        | Single bundle: deps → adapters → Orchid.run |
-  | `Options`       | —        | Internal: data resolution + opts assembly |
+  | Module                      | Mutable? | Role |
+  |-----------------------------|----------|------|
+  | `Oi.Dispatch.Config`        | no       | Executor, adapters, timeouts, baggage |
+  | `Oi.Dispatch.Drafting`      | yes      | Per-dispatch state: memory + interventions |
+  | `Oi.Dispatch.Orchestrator`  | —        | Stage loop: fan-out → collect → barrier |
+  | `Oi.Dispatch.Worker`        | —        | Single bundle: deps → adapters → Orchid.run |
+  | `Options`                   | —        | Internal: data resolution + opts assembly |
 
   ## Data format (`:data` option)
 
