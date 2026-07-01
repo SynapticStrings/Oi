@@ -1,16 +1,23 @@
 defmodule Oi do
-  @doc_header """
+  @moduledoc """
   Oi means Orchid integration.
+
+  Oi provides a simple API for [Orchid](https://hex.pm/packages/orchid)
+  and ready-to-use functions for bind [OrchidSymbiont](https://hex.pm/packages/orchid_symbiont), [OrchidStratum](https://hex.pm/packages/orchid_stratum)
+  and [OrchidIntervention](https://hex.pm/packages/orchid_intervention).
+
+  The purpose is building a front-end-friendly interface(exclipit nodes&edges).
+
+  ## Core Concepts
+
+  ### Oi pipeline
+
+  ### `Oi.Compiled`
+
+  ### Data format during `Oi.execute/2`
   """
 
-  @external_resource readme = Path.join([__DIR__, "../README.md"])
-  @doc_main readme
-            |> File.read!()
-            |> String.split("<!-- MDOC -->")
-            |> Enum.fetch!(1)
-
-  @moduledoc @doc_header <> @doc_main
-
+  @typedoc "Oi's name, split several scopes."
   @type name :: String.t()
 
   alias Oi.{Compile, Compiled, Result}
@@ -63,7 +70,7 @@ defmodule Oi do
   def execute(%Compiled{} = compiled, opts \\ []) do
     conf = Config.new(opts)
 
-    with {:ok, drafting} <- Config.build_drafting(conf, compiled),
+    with {:ok, drafting} <- Config.build_drafting(Keyword.get(opts, :data, %{}), compiled),
          {:ok, final_drafting} <- Orchestrator.dispatch(compiled.plan, drafting, conf) do
       {:ok, Result.new(final_drafting.memory)}
     else
@@ -72,7 +79,12 @@ defmodule Oi do
     end
   end
 
-  def run(struct, opts \\ [])
+  # All-in-one
+  #
+  # 1. extract cluster via key `:cluster`
+  # 2. other options same as execute/2
+  @spec run(Compiled.t() | Graph.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
+  def run(graph_or_compiled, opts \\ [])
 
   def run(%Compiled{} = compiled, opts) do
     execute(compiled, opts)

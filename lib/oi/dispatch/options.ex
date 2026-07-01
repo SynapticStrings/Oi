@@ -22,7 +22,7 @@ defmodule Oi.Dispatch.Options do
     end
   end
 
-  def build_drafting_inputs(%Compiled{edges: edges}, %Oi.Dispatch.Config{data: data}) do
+  def build_drafting_inputs(%Compiled{edges: edges}, data) do
 
     with {memory_raw, interventions_raw} when is_map(memory_raw) <- resolve_data(data, edges) do
       memory_io =

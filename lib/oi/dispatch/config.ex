@@ -17,6 +17,16 @@ defmodule Oi.Dispatch.Config do
     * `:timeout`        — fallback for executor if `:executor_opts` has none
   """
 
+  @typedoc """
+  Unified user-facing data for `Oi.execute/2`.
+
+  Two formats supported:
+
+    - Tuple keys: `%{{:step1, :in} => "foo", {:step2, :out} => {:override, "bar"}}`
+    - Nested: `%{step1: %{in: "foo"}, step2: %{out: {:override, "bar"}}}`
+  """
+  @type data :: map()
+
   @type t :: %__MODULE__{
           executor: module(),
           executor_opts: keyword(),
@@ -29,27 +39,15 @@ defmodule Oi.Dispatch.Config do
           orchid_opts: keyword(),
           concurrency: pos_integer(),
           timeout: timeout(),
-          data: map(),
           data: data(),
           name: Oi.name() | nil
         }
-
-  @typedoc """
-  Unified user-facing data for `Oi.execute/2`.
-
-  Two formats supported:
-
-    - Tuple keys: `%{{:step1, :in} => "foo", {:step2, :out} => {:override, "bar"}}`
-    - Nested: `%{step1: %{in: "foo"}, step2: %{out: {:override, "bar"}}}`
-  """
-  @type data :: map()
 
   defstruct executor: Oi.Executor.Sync,
             executor_opts: [],
             orchid_adapters: [],
             orchid_baggage: %{},
             orchid_opts: [],
-            data: %{},
             concurrency: System.schedulers_online(),
             timeout: :infinity,
             name: nil
@@ -76,7 +74,6 @@ defmodule Oi.Dispatch.Config do
       orchid_adapters: Keyword.get(opts, :orchid_adapters, []),
       orchid_baggage: opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{}),
       orchid_opts: Keyword.get(opts, :orchid_opts, []),
-      data: Keyword.get(opts, :data, %{}),
       concurrency: concurrency,
       timeout: timeout
     }
@@ -86,10 +83,10 @@ defmodule Oi.Dispatch.Config do
   Build a `Drafting` from user `:data` and compiled graph topology.
   Delegates to `Options.build_drafting_inputs/2`.
   """
-  @spec build_drafting(t(), Oi.Compiled.t()) ::
+  @spec build_drafting(data(), Oi.Compiled.t()) ::
           {:ok, Oi.Dispatch.Drafting.t()} | {:error, term()}
-  def build_drafting(%__MODULE__{} = conf, %Oi.Compiled{} = compiled) do
-    case Oi.Dispatch.Options.build_drafting_inputs(compiled, conf) do
+  def build_drafting(data, %Oi.Compiled{} = compiled) do
+    case Oi.Dispatch.Options.build_drafting_inputs(compiled, data) do
       {memory_io, interventions_io} when is_map(memory_io) ->
         {:ok, Oi.Dispatch.Drafting.new(memory_io, interventions_io)}
 
