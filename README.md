@@ -68,9 +68,7 @@ IO.inspect(coffee)
     step1: %{in: "hello"},
     step2: %{in: {:override, "forced_value"}}   # step2.in has upstream edge → intervention
   },
-  orchid_opts: [
-    global_hooks_stack: [Orchid.Hook.ApplyInterventions]
-  ]
+  orchid_adapters: [&Oi.Adapters.orchid_intervention/1]
 )
 
 # Tuple payload — use %Orchid.Param{} to preserve type info
@@ -79,9 +77,7 @@ IO.inspect(coffee)
     src: %{in: "hello"},
     tgt: %{in: {:override, %Orchid.Param{name: :key, type: {:tuple, 2}, payload: {1, 2}}}}
   },
-  orchid_opts: [
-    global_hooks_stack: [Orchid.Hook.ApplyInterventions]
-  ]
+  orchid_adapters: [&Oi.Adapters.orchid_intervention/1]
 )
 ```
 

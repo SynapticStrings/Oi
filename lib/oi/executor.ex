@@ -9,7 +9,6 @@ defmodule Oi.Executor do
 
     * `Oi.Executor.Sync`       — serial `Enum.map`, zero processes
     * `Oi.Executor.TaskSup`    — `Task.Supervisor.async_stream_nolink`
-    * `Oi.Executor.Pool`       — `NimblePool` checkout (GPU-intensive tasks)
   """
 
   @type task :: Oi.Compile.Bundle.t()

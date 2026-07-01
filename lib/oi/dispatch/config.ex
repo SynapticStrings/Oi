@@ -10,11 +10,12 @@ defmodule Oi.Dispatch.Config do
 
     * `:executor`       — module implementing `Oi.Executor` (default: `Oi.Executor.Sync`)
     * `:executor_opts`  — keyword opts passed to executor's `run/3`
-    * `:orchid_adapters`        — ordered list of `fn {recipe, opts}, conf -> {recipe, opts}` adapters
+    * `:orchid_adapters`        — ordered list of adapters; each is a 1-arity `fn {recipe, opts} -> {recipe, opts}` or 2-arity `fn {recipe, opts}, conf -> {recipe, opts}`
     * `:orchid_baggage` — map merged into every Orchid run's baggage
     * `:orchid_opts`    — extra keyword opts forwarded to `Orchid.run/3`
-    * `:concurrency`    — fallback for executor if `:executor_opts` has none
-    * `:timeout`        — fallback for executor if `:executor_opts` has none
+    * `:concurrency`    — fallback for executor if `:executor_opts` has none (default: `System.schedulers_online()`)
+    * `:timeout`        — fallback for executor if `:executor_opts` has none (default: `:infinity`)
+    * `:name`           — optional scope name, merged into baggage as `:scope_id`
   """
 
   @typedoc """

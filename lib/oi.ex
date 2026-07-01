@@ -14,8 +14,10 @@ defmodule Oi do
 
   There're three phases in Oi's lifecycle:
 
-  1. Build a `Graph` of step nodes and edges
-  2. `Oi.compile/1`(*topology level*) generate static `Oi.Compiled` struct (bundles + plan, reusable)
+  1. Build a `Oi.Topology.Graph` of step nodes and edges
+      * By macros in `Oi.Flowgraph`
+      * By functions in `Oi.Topology.Graph`
+  2. `Oi.compile/2`(*topology level*) generate static `Oi.Compiled` struct (bundles + plan, reusable)
   3. `Oi.execute/2` can resolve data, apply orchid_adapters, run via pluggable executor
 
   ### Compiled
@@ -53,7 +55,9 @@ defmodule Oi do
   ### Pluggable Executor
 
   Pluggable task fan-out per stage. Built-in: `Oi.Executor.Sync` (serial),
-  `Oi.Executor.TaskSup` (Task.Supervisor within per session). `Pool` (NimblePool) planned.
+  `Oi.Executor.TaskSup` (Task.Supervisor within per session).
+
+  Custom executors implement the `Oi.Executor` behaviour.
 
   ### Session / Multiple Oi instances
 
@@ -114,10 +118,14 @@ defmodule Oi do
 
   ## Other options
 
-    * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or `Oi.Executor.Pool`
+    * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or custom module implementing `Oi.Executor`
     * `:executor_opts` — passed to the executor (e.g. `[sup: MyTaskSup]`)
-    * `:orchid_adapters` — OrchidPlugin pipeline
+    * `:orchid_adapters` — adapter pipeline; each is a 1-arity or 2-arity function over `{recipe, opts}`
     * `:orchid_baggage` — merged into Orchid run baggage
+    * `:orchid_opts` — extra keyword opts forwarded to `Orchid.run/3`
+    * `:concurrency` — fallback for executor if `:executor_opts` has none (default: `System.schedulers_online()`)
+    * `:timeout` — fallback for executor (default: `:infinity`)
+    * `:name` — optional scope name, merged into baggage as `:scope_id`
   """
   @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
   def execute(%Compiled{} = compiled, opts \\ []) do

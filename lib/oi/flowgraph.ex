@@ -1,5 +1,5 @@
 defmodule Oi.Flowgraph do
-  @moduledoc "A higher API for builing graph."
+  @moduledoc "A higher API for building graph."
 
   alias Oi.Topology.Graph
 

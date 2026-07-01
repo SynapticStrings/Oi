@@ -78,12 +78,12 @@ defmodule Oi.Adapters do
   @doc """
   Prepends both hooks when available, respecting the layering order:
 
-      OrchidIntervention => OrchidStratum => [exclipit hook stack] => Core
+      OrchidIntervention => OrchidStratum => [explicit hook stack] => Core
 
   Includes auto-init of ETS-backed Meta/Blob stores (same as
-  `orchid_stratum/1`).
+  `orchid_stratum/2`).
 
-  Equivalent to `orchid_adapters: [&orchid_stratum/1, &orchid_intervention/1]`
+  Equivalent to `orchid_adapters: [&orchid_stratum/2, &orchid_intervention/1]`
   but in a single adapter call.
   """
   @spec orchid_intervention_and_stratum({Orchid.Recipe.t(), keyword()}, Oi.Dispatch.Config.t()) ::

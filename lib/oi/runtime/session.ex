@@ -1,6 +1,6 @@
 defmodule Oi.Runtime.Session do
   @moduledoc """
-  Session seperates whole application into seperal spaces where contains different
+  Session separates the whole application into several spaces where contains different
   steps, independent [symbionts](https://orchid-symbiont.hexdocs.pm/) and storages.
   """
   import Oi.Runtime.Registry
