@@ -122,48 +122,6 @@ defmodule MyApp.Steps.Predict do
 end
 ```
 
-## Core concepts
-
-- **Graph → Compile → Execute** — three-phase pipeline:
-  1. Build a `Graph` of step nodes and edges
-  2. `Oi.compile(graph)` — topology → static `Compiled` (bundles + plan, reusable)
-  3. `Oi.execute(compiled, opts)` — resolve data, apply orchid_adapters, run via pluggable executor
-
-- **Compiled** — immutable compilation product. Compile once, dispatch many times
-  with different data / executors.
-
-- **Data** — unified `data:` replaces the separate `inputs:` / `interventions:`.
-  Ports with **no incoming edge** → memory (external inputs).
-  Ports with **an incoming edge** → interventions (data originates inside the graph,
-  user is overriding it). Intervention values use the format `{type, value}`
-  where `type` is an atom naming the intervention strategy (`:override`, `:offset`,
-  or a custom module like `MyApp.MergeStrategy`). Plain values default to
-  `{:override, value}`.
-
-  When the payload is a tuple, wrap it explicitly in `%Orchid.Param{}` to
-  preserve type information:
-      {:override, %Orchid.Param{name: :key, type: {:tuple, 2}, payload: {1, 2}}}
-
-  Two formats supported:
-
-  ```elixir
-  # Nested (recommended)
-  data: %{step1: %{in: "foo"}, step2: %{result: {:override, "bar"}}}
-
-  # Tuple keys
-  data: %{{:step1, :in} => "foo", {:step2, :result} => {:override, "bar"}}
-  ```
-
-- **Executor** — pluggable task fan-out per stage. Built-in: `Sync` (serial),
-  `TaskSup` (Task.Supervisor). `Pool` (NimblePool) planned.
-
-- **Session** — optional multi-tenant isolation via `Oi.Runtime.Session`,
-  wrapping per-tenant `OrchidSymbiont.Runtime` + `Task.Supervisor`.
-
-- **Extension model** — Oi intentionally does not implement its own workflow
-  plugin system. Use Orchid hooks through `:orchid_opts` for step-level
-  concerns such as auth, logging, metrics, retry, and caching.
-
 ## License
 
 MIT

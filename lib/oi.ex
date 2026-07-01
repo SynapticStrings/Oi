@@ -12,9 +12,62 @@ defmodule Oi do
 
   ### Oi pipeline
 
-  ### `Oi.Compiled`
+  There're three phases in Oi's lifecycle:
+
+  1. Build a `Graph` of step nodes and edges
+  2. `Oi.compile/1`(*topology level*) generate static `Oi.Compiled` struct (bundles + plan, reusable)
+  3. `Oi.execute/2` can resolve data, apply orchid_adapters, run via pluggable executor
+
+  ### Compiled
+
+  immutable compilation product. Compile once, dispatch many times
+  with different data / executors.
+
+  See `Oi.Compiled`.
 
   ### Data format during `Oi.execute/2`
+
+  Oi provides unified `data:` replaces the separate `inputs:` / `interventions:`.
+
+  * Ports with **no incoming edge** → memory (external inputs).
+  * Ports with **an incoming edge** → interventions (data originates inside the graph,
+    user is overriding it). Intervention values use the format `{type, value}`
+    where `type` is an atom naming the intervention strategy (`:override`, `:offset`,
+    or a custom module like `MyApp.MergeStrategy`). Plain values default to
+    `{:override, value}`.
+
+  When the payload is a tuple, wrap it explicitly in `%Orchid.Param{}` to
+  preserve type information:
+      {:override, %Orchid.Param{name: :key, type: {:tuple, 2}, payload: {1, 2}}}
+
+  Two formats supported:
+
+  ```elixir
+  # Nested (recommended)
+  data: %{step1: %{in: "foo"}, step2: %{result: {:override, "bar"}}}
+
+  # Tuple keys
+  data: %{{:step1, :in} => "foo", {:step2, :result} => {:override, "bar"}}
+  ```
+
+  ### Pluggable Executor
+
+  Pluggable task fan-out per stage. Built-in: `Oi.Executor.Sync` (serial),
+  `Oi.Executor.TaskSup` (Task.Supervisor within per session). `Pool` (NimblePool) planned.
+
+  ### Session / Multiple Oi instances
+
+  Optional multi-tenant isolation via `Oi.Runtime.Session`,
+  wrapping per-tenant `OrchidSymbiont.Runtime` + `Task.Supervisor`.
+
+  ### Orchid Extension
+
+  Oi intentionally does not implement its own workflow plugin system.
+  Use Orchid hooks through `:orchid_opts` for step-level concerns such as logging,
+  metrics, retry, and caching.
+
+  Oi also support some ready-to-use functions to load/modify orchid's recipe and
+  options via `Oi.Adapters`.
   """
 
   @typedoc "Oi's name, split several scopes."

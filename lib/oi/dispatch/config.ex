@@ -39,7 +39,6 @@ defmodule Oi.Dispatch.Config do
           orchid_opts: keyword(),
           concurrency: pos_integer(),
           timeout: timeout(),
-          data: data(),
           name: Oi.name() | nil
         }
 
