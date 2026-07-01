@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.6.4 (2026-07-01)
+
+### Changed
+
+- `Oi.Dispatch.Config` now owns `data` type and drafts construction:
+  `build_drafting/2` and `assemble_run_opts/2` moved from `Oi.execute/2`
+  into Config, reducing the entry module to delegation-only.
+- `Oi.Dispatch.Options` marked `@moduledoc false` — internal-only,
+  called exclusively through Config.
+- Worker calls `Config.assemble_run_opts/2` instead of reaching into
+  Options directly.
+
+### Docs
+
+- README slimmed down; core concepts relocated to `Oi` module doc.
+- Fully-qualified module names in all `@doc` references.
+- Added AGENTS.md.
+
 ## v0.6.3 (2026-06-30)
 
 ### Changed
