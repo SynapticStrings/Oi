@@ -18,8 +18,14 @@ defmodule Oi.MixProject do
         groups_for_modules: [
           Core: [Oi, Oi.Compiled, Oi.Result],
           DSL: [Oi.Flowgraph, Oi.Step],
-          Compile: [Oi.Compile.Bundle, Oi.Compile.Planning],
+          Compile: [
+            Oi.Compile.Bundle,
+            Oi.Compile.Planning,
+            Oi.Compile.Planning.Plan,
+            Oi.Compile.Planning.Stage,
+          ],
           Dispatch: [
+            Oi.Dispatch,
             Oi.Dispatch.Config,
             Oi.Dispatch.Drafting,
             Oi.Dispatch.Orchestrator,
