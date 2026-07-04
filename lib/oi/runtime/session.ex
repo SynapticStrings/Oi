@@ -41,8 +41,6 @@ defmodule Oi.Runtime.Session do
     end
   end
 
-  # TODO
-  # 确定要 resolve 谁
   @spec resolve(Oi.name()) :: {:error, :session_not_found} | {:ok, pid()}
   def resolve(oi_name) do
     case Registry.lookup(Oi.Runtime.Registry, instances(oi_name)) do
@@ -51,17 +49,39 @@ defmodule Oi.Runtime.Session do
     end
   end
 
-  # list/0
+  @doc """
+  Ensures a session is started and calls `fun` with session-scoped opts.
 
-  # info/1
+  `fun` receives a keyword list suitable for merging into `Oi.run/2` or
+  `Oi.execute/2`:
 
-  # with_session/3
-  # Oi.Session.with_session("tenant-1", fn session ->
-  #   Oi.run(graph,
-  #     ...
-  #     )
-  # end, opts
-  # )
+    * `:executor` — `Oi.Executor.TaskSup`
+    * `:executor_opts` — `[sup: Session.tasks_tuple(name)]`
+    * `:orchid_baggage` — `%{scope_id: name}`
+    * `:name` — the session name
+
+  The session is **not** stopped when `fun` returns — sessions are
+  designed to be long-lived. Call `stop/1` when done.
+
+  ## Example
+
+      Session.with_session("tenant-1", fn session ->
+        Oi.run(graph, Keyword.merge(session, data: %{greeter: %{name: "Alice"}}))
+      end)
+  """
+  @spec with_session(Oi.name(), keyword(), (keyword() -> result)) :: result when result: term()
+  def with_session(oi_name, opts \\ [], fun) when is_function(fun, 1) do
+    {:ok, _pid} = ensure_started(oi_name, opts)
+
+    session_opts = [
+      executor: Oi.Executor.TaskSup,
+      executor_opts: [sup: tasks_tuple(oi_name)],
+      orchid_baggage: %{scope_id: oi_name},
+      name: oi_name
+    ]
+
+    fun.(session_opts)
+  end
 
   # ---- Helpers ----
 
@@ -70,17 +90,6 @@ defmodule Oi.Runtime.Session do
   @spec instances_tuple(Oi.name()) :: Oi.Runtime.Registry.via_tuple()
   def instances_tuple(oi), do: via(oi, :instances)
 
-  # @spec server(Oi.name()) :: Oi.Runtime.Registry.key()
-  # def server(oi), do: key(oi, :server)
-  # @spec server_tuple(Oi.name()) :: Oi.Runtime.Registry.via_tuple()
-  # def server_tuple(oi), do: via(oi, :server)
-
   @spec tasks_tuple(Oi.name()) :: Oi.Runtime.Registry.via_tuple()
   def tasks_tuple(oi), do: via(oi, :task_sup)
-
-  # ---- Symbiont related ----
-
-  # def register_symbiont(oi_name, ...)
-
-  # ---- Oi dispatch config related ----
 end

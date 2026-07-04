@@ -14,11 +14,39 @@ defmodule Oi.Dispatch.Worker do
   @spec run(Bundle.t(), Drafting.t(), Config.t()) ::
           {:ok, delta()} | {:error, term()}
   def run(%Bundle{} = bundle, %Drafting{} = drafting, %Config{} = conf) do
-    with {:ok, dynamic_inputs} <- resolve_dependencies(bundle, drafting) do
-      base_opts = Config.assemble_run_opts(conf, drafting)
-      {recipe, final_opts} = Config.apply_orchid_adapters(conf, {bundle.recipe, base_opts})
-      run_orchid(recipe, dynamic_inputs, final_opts)
+    start_time = System.monotonic_time()
+    meta = %{bundle_name: bundle.recipe.name}
+
+    :telemetry.execute([:oi, :worker, :start], %{system_time: System.system_time()}, meta)
+
+    result =
+      with {:ok, dynamic_inputs} <- resolve_dependencies(bundle, drafting) do
+        base_opts = Config.assemble_run_opts(conf, drafting)
+        {recipe, final_opts} = Config.apply_orchid_adapters(conf, {bundle.recipe, base_opts})
+        run_orchid(recipe, dynamic_inputs, final_opts)
+      end
+
+    case result do
+      {:ok, _} ->
+        :telemetry.execute(
+          [:oi, :worker, :stop],
+          %{
+            duration: System.monotonic_time() - start_time
+          },
+          meta
+        )
+
+      {:error, _} ->
+        :telemetry.execute(
+          [:oi, :worker, :stop],
+          %{
+            duration: System.monotonic_time() - start_time
+          },
+          Map.put(meta, :error, result)
+        )
     end
+
+    result
   end
 
   defp run_orchid(recipe, params, opts) do

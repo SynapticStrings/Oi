@@ -12,12 +12,34 @@ defmodule Oi.Dispatch.Orchestrator do
   @spec dispatch(Planning.Plan.t(), Drafting.t(), Config.t()) ::
           {:ok, Drafting.t()} | {:error, term()}
   def dispatch(%Planning.Plan{} = plan, %Drafting{} = drafting, %Config{} = conf) do
-    Enum.reduce_while(plan.stages, {:ok, drafting}, fn stage, {:ok, current_drafting} ->
-      case run_stage(stage, current_drafting, conf) do
-        {:ok, updated} -> {:cont, {:ok, updated}}
-        {:error, _} = err -> {:halt, err}
-      end
-    end)
+    stage_count = length(plan.stages)
+
+    {final, _} =
+      Enum.reduce(plan.stages, {{:ok, drafting}, 0}, fn
+        stage, {{:ok, current_drafting}, idx} ->
+          stage_meta = %{stage_index: idx, stage_count: stage_count}
+
+          :telemetry.execute(
+            [:oi, :stage, :start],
+            %{system_time: System.system_time()},
+            stage_meta
+          )
+
+          case run_stage(stage, current_drafting, conf) do
+            {:ok, updated} ->
+              :telemetry.execute([:oi, :stage, :stop], %{}, stage_meta)
+              {{:ok, updated}, idx + 1}
+
+            {:error, _} = err ->
+              :telemetry.execute([:oi, :stage, :stop], %{}, Map.put(stage_meta, :error, err))
+              {err, idx}
+          end
+
+        _stage, {err, idx} ->
+          {err, idx}
+      end)
+
+    final
   end
 
   defp run_stage(%Planning.Stage{} = stage, drafting, %Config{} = conf) do

@@ -5,9 +5,7 @@ defmodule Oi.Runtime.Session.Instances do
   alias Oi.Runtime.Session
 
   def start_link(oi_name, opts) do
-    Supervisor.start_link(__MODULE__, {oi_name, opts},
-      name: Session.instances_tuple(oi_name)
-    )
+    Supervisor.start_link(__MODULE__, {oi_name, opts}, name: Session.instances_tuple(oi_name))
   end
 
   @impl true

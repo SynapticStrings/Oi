@@ -57,7 +57,8 @@ defmodule Oi.SmokeTest do
         |> Graph.add_edge(Edge.new(:a, :out, :b, :in))
         |> Graph.add_edge(Edge.new(:b, :out, :a, :in))
 
-      assert {:error, [cycle_detected: [:a, :b]]} = Bundle.compile_graph(graph)
+      assert {:error, [cycle_detected: nodes]} = Bundle.compile_graph(graph)
+      assert Enum.sort(nodes) == [:a, :b]
     end
   end
 

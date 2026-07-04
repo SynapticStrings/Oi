@@ -164,9 +164,9 @@ defmodule Oi.Topology.Graph do
 
   def add_edge(%__MODULE__{} = graph, edge) do
     cond do
-      # Avoid self-loop
+      # Self-loop is a user error — reject explicitly
       edge.from_node == edge.to_node ->
-        graph
+        {:error, :self_loop}
 
       # Avoid duplicated edge
       MapSet.member?(graph.edges, edge) ->

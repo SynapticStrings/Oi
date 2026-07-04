@@ -22,7 +22,7 @@ defmodule Oi.MixProject do
             Oi.Compile.Bundle,
             Oi.Compile.Planning,
             Oi.Compile.Planning.Plan,
-            Oi.Compile.Planning.Stage,
+            Oi.Compile.Planning.Stage
           ],
           Dispatch: [
             Oi.Dispatch,
@@ -72,6 +72,7 @@ defmodule Oi.MixProject do
     [
       # Orchid related.
       {:orchid, "~> 0.6"},
+      {:telemetry, ">= 0.0.0"},
       {:orchid_symbiont, "~> 0.2", optional: true},
       {:orchid_intervention, "~> 0.2", optional: true},
       {:orchid_stratum, "~> 0.2", optional: true},

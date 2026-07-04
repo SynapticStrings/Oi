@@ -126,12 +126,35 @@ defmodule Oi do
   @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
   def execute(%Compiled{} = compiled, opts \\ []) do
     conf = Config.new(opts)
+    start_time = System.monotonic_time()
+
+    metadata = %{name: conf.name}
+
+    :telemetry.execute([:oi, :execute, :start], %{system_time: System.system_time()}, metadata)
 
     with {:ok, drafting} <- Config.build_drafting(Keyword.get(opts, :data, %{}), compiled),
          {:ok, final_drafting} <- Orchestrator.dispatch(compiled.plan, drafting, conf) do
-      {:ok, Result.new(final_drafting.memory)}
+      result = {:ok, Result.new(final_drafting.memory)}
+
+      :telemetry.execute(
+        [:oi, :execute, :stop],
+        %{
+          duration: System.monotonic_time() - start_time
+        },
+        metadata
+      )
+
+      result
     else
       {:error, _} = err ->
+        :telemetry.execute(
+          [:oi, :execute, :stop],
+          %{
+            duration: System.monotonic_time() - start_time
+          },
+          Map.put(metadata, :error, err)
+        )
+
         err
     end
   end

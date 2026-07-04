@@ -69,5 +69,41 @@ defmodule Oi.Runtime.SessionSmokeTest do
 
       Session.stop("dispatch-tenant")
     end
+
+    test "with_session/3 wraps the boilerplate" do
+      graph = build_finin_and_fanout_dag()
+
+      result =
+        Session.with_session("ws-test", fn session ->
+          {:ok, compiled} = Oi.compile(graph)
+
+          Oi.execute(compiled,
+            Keyword.merge(session, data: %{step1: %{in: "A"}, step2: %{in: "B"}})
+          )
+        end)
+
+      assert {:ok, %Oi.Result{}} = result
+      assert map_size(elem(result, 1).memory) > 0
+
+      Session.stop("ws-test")
+    end
+
+    test "with_session/3 is idempotent" do
+      graph = build_finin_and_fanout_dag()
+
+      run = fn ->
+        Session.with_session("ws-idem", fn session ->
+          {:ok, compiled} = Oi.compile(graph)
+          Oi.execute(compiled,
+            Keyword.merge(session, data: %{step1: %{in: "X"}, step2: %{in: "Y"}})
+          )
+        end)
+      end
+
+      assert {:ok, %Oi.Result{}} = run.()
+      assert {:ok, %Oi.Result{}} = run.()
+
+      Session.stop("ws-idem")
+    end
   end
 end

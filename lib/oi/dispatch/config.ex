@@ -89,12 +89,8 @@ defmodule Oi.Dispatch.Config do
   @spec build_drafting(data(), Oi.Compiled.t()) ::
           {:ok, Drafting.t()} | {:error, term()}
   def build_drafting(data, %Oi.Compiled{} = compiled) do
-    case Options.build_drafting_inputs(compiled, data) do
-      {memory_io, interventions_io} when is_map(memory_io) ->
-        {:ok, Drafting.new(memory_io, interventions_io)}
-
-      {:error, _} = err ->
-        err
+    with {:ok, {memory_io, interventions_io}} <- Options.build_drafting_inputs(compiled, data) do
+      {:ok, Drafting.new(memory_io, interventions_io)}
     end
   end
 

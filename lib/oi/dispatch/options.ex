@@ -14,17 +14,18 @@ defmodule Oi.Dispatch.Options do
   #
   # Values pass through as-is — no wrapping, no io_key conversion.
   @spec resolve_data(Oi.Dispatch.Config.data(), MapSet.t(Edge.t())) ::
-          {%{{Node.id(), Node.node_port()} => term()}, %{{Node.id(), Node.node_port()} => term()}}
+          {:ok,
+           {%{{Node.id(), Node.node_port()} => term()},
+            %{{Node.id(), Node.node_port()} => term()}}}
           | {:error, :invalid_data_format}
   def resolve_data(data, edges) when is_map(data) do
     with {:ok, flat} <- flatten_data(data) do
-      Enum.reduce(flat, {%{}, %{}}, &split_by_edge(&1, &2, edges))
+      {:ok, Enum.reduce(flat, {%{}, %{}}, &split_by_edge(&1, &2, edges))}
     end
   end
 
   def build_drafting_inputs(%Compiled{edges: edges}, data) do
-
-    with {memory_raw, interventions_raw} when is_map(memory_raw) <- resolve_data(data, edges) do
+    with {:ok, {memory_raw, interventions_raw}} <- resolve_data(data, edges) do
       memory_io =
         Map.new(memory_raw, fn {{n, p}, v} ->
           {PortRef.to_orchid_key({:port, n, p}),
@@ -39,7 +40,7 @@ defmodule Oi.Dispatch.Options do
           {PortRef.to_orchid_key({:port, n, p}), v}
         end)
 
-      {memory_io, interventions_io}
+      {:ok, {memory_io, interventions_io}}
     end
   end
 

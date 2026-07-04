@@ -6,6 +6,11 @@ defmodule Oi.Adapters do
   in `Oi.execute/2` options or `Oi.Dispatch.Config.new/1`.
   """
 
+  # Suppress undefined-module warnings for optional dependencies.
+  # Code.ensure_loaded? guards prevent runtime errors when deps are absent.
+  @compile {:no_warn_undefined, OrchidStratum.MetaStorage.EtsAdapter}
+  @compile {:no_warn_undefined, OrchidStratum.BlobStorage.EtsAdapter}
+
   # ---- OrchidIntervention ----
 
   @doc """
@@ -115,14 +120,10 @@ defmodule Oi.Adapters do
     baggage =
       baggage
       |> Map.put_new_lazy(:meta_store, fn ->
-        # Module.concat + apply avoids compile-time warnings when
-        # orchid_stratum is not available (optional dep).
-        mod = Module.concat([OrchidStratum, MetaStorage, EtsAdapter])
-        {mod, apply(mod, :init, [])}
+        {OrchidStratum.MetaStorage.EtsAdapter, OrchidStratum.MetaStorage.EtsAdapter.init()}
       end)
       |> Map.put_new_lazy(:blob_store, fn ->
-        mod = Module.concat([OrchidStratum, BlobStorage, EtsAdapter])
-        {mod, apply(mod, :init, [])}
+        {OrchidStratum.BlobStorage.EtsAdapter, OrchidStratum.BlobStorage.EtsAdapter.init()}
       end)
 
     {recipe, Keyword.put(opts, :baggage, baggage)}

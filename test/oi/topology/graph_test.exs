@@ -53,19 +53,26 @@ defmodule Oi.Topology.GraphTest do
       assert graph.nodes[:node_1].container == DummyStep1
     end
 
-    test "add_edge/2 ignores duplicate and self-loop edges" do
+    test "add_edge/2 ignores duplicate edges" do
       graph =
         new()
         |> add_node(%Node{id: :a, container: DummyStep1, inputs: [:in], outputs: [:out]})
         |> add_node(%Node{id: :b, container: DummyStep1, inputs: [:in], outputs: [:out]})
         |> add_edge(Edge.new(:a, :out, :b, :in))
         |> add_edge(Edge.new(:a, :out, :b, :in))
-        |> add_edge(Edge.new(:a, :out, :a, :in))
 
       assert Enum.count(graph.edges) == 1
       edge = Enum.at(graph.edges, 0)
       assert edge.from_node == :a
       assert edge.to_node == :b
+    end
+
+    test "add_edge/2 rejects self-loop" do
+      graph =
+        new()
+        |> add_node(%Node{id: :a, container: DummyStep1, inputs: [:in], outputs: [:out]})
+
+      assert add_edge(graph, Edge.new(:a, :out, :a, :in)) == {:error, :self_loop}
     end
 
     test "remove_node/2 cleans up node and its edges" do
