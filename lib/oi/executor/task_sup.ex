@@ -13,18 +13,21 @@ defmodule Oi.Executor.TaskSup do
         concurrency = Keyword.get(opts, :concurrency, System.schedulers_online())
         timeout = Keyword.get(opts, :timeout, :infinity)
 
-        Task.Supervisor.async_stream_nolink(
-          sup,
-          tasks,
-          worker,
-          max_concurrency: concurrency,
-          timeout: timeout,
-          ordered: false
-        )
-        |> Enum.map(fn
-          {:ok, result} -> result
-          {:exit, reason} -> {:error, {:worker_crashed, reason}}
-        end)
+        results =
+          Task.Supervisor.async_stream_nolink(
+            sup,
+            tasks,
+            worker,
+            max_concurrency: concurrency,
+            timeout: timeout,
+            ordered: false
+          )
+          |> Enum.map(fn
+            {:ok, result} -> result
+            {:exit, reason} -> {:error, {:worker_crashed, reason}}
+          end)
+
+        {:ok, results}
 
       :error ->
         {:error, {:missing_opt, :sup}}

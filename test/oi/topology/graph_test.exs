@@ -72,7 +72,7 @@ defmodule Oi.Topology.GraphTest do
         new()
         |> add_node(%Node{id: :a, container: DummyStep1, inputs: [:in], outputs: [:out]})
 
-      assert add_edge(graph, Edge.new(:a, :out, :a, :in)) == {:error, :self_loop}
+      assert add_edge(graph, Edge.new(:a, :out, :a, :in)) == {:error, {:self_loop, :a}}
     end
 
     test "remove_node/2 cleans up node and its edges" do

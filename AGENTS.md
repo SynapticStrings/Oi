@@ -217,11 +217,11 @@ Sessions are registered via `Oi.Runtime.Registry` (local Registry). `Session.ens
 
 6. **Config vs Drafting**: Config holds immutable execution strategy (executor, adapters, timeouts) — same across multiple `execute` calls. Drafting holds per-dispatch mutable data (memory + interventions) — unique to each execution. Interventions live in Drafting, not Config. This separation enables compile-once-execute-many: same Config, different Drafting each time.
 
-7. **Executor contract (current, rough design)**: The `Oi.Executor` behaviour defines `run(tasks, worker_fn, opts)`. It must return a list of `{:ok, %{io_key => Orchid.Param.t()}}` or `{:error, term()}` tuples, one per task. Known rough edges: (a) the dual-level error pattern — executor-level `{:error, term()}` vs per-task `{:error, term()}` in the list — is ambiguous; (b) `TaskSup` uses `ordered: false`, so result order doesn't match task order, but this isn't part of the contract; (c) `opts` is an untyped keyword list (`:sup`, `:concurrency`, `:timeout` are implicit); (d) worker crashes in `TaskSup` are wrapped as `{:error, {:worker_crashed, reason}}`, an undocumented convention.
+7. **Executor contract**: `run(tasks, worker_fn, opts)` returns `{:ok, [result()]} | {:error, term()}`. Per-task results are `{:ok, %{io_key => Orchid.Param.t()}} | {:error, term()}`. Known rough edges: (a) `TaskSup` uses `ordered: false`, so result order doesn't match task order, but this isn't part of the contract; (b) `opts` is an untyped keyword list (`:sup`, `:concurrency`, `:timeout` are implicit); (c) worker crashes in `TaskSup` are wrapped as `{:error, {:worker_crashed, reason}}`, an undocumented convention.
 
 8. **Cluster defaults**: Without a Cluster, all nodes go to `:default_cluster` and produce a single bundle. Cluster coloring propagates upstream — a node inherits its upstream neighbor's color if not explicitly set.
 
-9. **Self-loops silently ignored**: `Graph.add_edge/2` silently drops edges where `from_node == to_node`. No error raised.
+9. **Self-loops rejected**: `Graph.add_edge/2` returns `{:error, {:self_loop, node_id}}` when `from_node == to_node`. Duplicate edges are still silently dropped.
 
 10. **`mix.exs` test coverage**: Test modules matching `~r/.*Test.*/` are excluded from coverage reports.
 

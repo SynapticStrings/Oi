@@ -16,5 +16,5 @@ defmodule Oi.Executor do
   @type worker :: (task() -> result())
 
   @callback run(tasks :: [task()], worker :: worker(), opts :: keyword()) ::
-              [result()] | {:error, term()}
+              {:ok, [result()]} | {:error, term()}
 end

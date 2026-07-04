@@ -51,7 +51,7 @@ defmodule Oi.Dispatch.Orchestrator do
       {:error, _} = err ->
         err
 
-      results when is_list(results) ->
+      {:ok, results} ->
         Enum.reduce_while(results, {:ok, drafting}, fn
           {:ok, outputs}, {:ok, acc} ->
             {:cont, {:ok, merge_results(acc, outputs)}}
@@ -59,9 +59,6 @@ defmodule Oi.Dispatch.Orchestrator do
           {:error, _} = err, _acc ->
             {:halt, err}
         end)
-
-      other ->
-        {:error, {:bad_executor_return, conf.executor, other}}
     end
   end
 

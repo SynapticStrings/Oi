@@ -4,6 +4,6 @@ defmodule Oi.Executor.Sync do
 
   @impl true
   def run(tasks, worker, _opts) do
-    Enum.map(tasks, worker)
+    {:ok, Enum.map(tasks, worker)}
   end
 end

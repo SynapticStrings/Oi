@@ -68,6 +68,31 @@ defmodule Oi do
 
   Oi also support some ready-to-use functions to load/modify orchid's recipe and
   options via `Oi.Adapters`.
+
+  ## Errors
+
+  All public functions return either {:ok, result} or {:error, reason}.
+  Errors are tagged tuples keyed by phase:
+
+  *Graph phase* (build + validate)
+
+    - {:error, {:self_loop, node_id}} -- add_edge/2, node points to itself
+    - {:error, [{:orphan_edge, ...}]} -- validate/1, edge refs nonexistent node
+    - {:error, [{:port_not_found, ...}]} -- validate/1, port not in inputs/outputs
+    - {:error, [{:cycle_detected, [node_id]}]} -- validate/1, nodes in a cycle
+
+  *Dispatch phase* (execute)
+
+    - {:error, :invalid_data_format} -- malformed :data input
+    - {:error, {:missing_input, io_key}} -- required upstream port not in memory
+    - {:error, {:bad_executor_return, mod, val}} -- executor returned unexpected shape
+
+  *Orchid phase* (transparent pass-through)
+
+    - {:error, {:orchid_error, recipe_name, %Orchid.Error{}}}
+
+  Validation errors accumulate -- the :error tuple wraps a list so the
+  caller sees all problems at once, not just the first one found.
   """
 
   @typedoc "Oi's name, split several scopes."

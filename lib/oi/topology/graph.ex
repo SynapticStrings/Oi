@@ -166,7 +166,7 @@ defmodule Oi.Topology.Graph do
     cond do
       # Self-loop is a user error — reject explicitly
       edge.from_node == edge.to_node ->
-        {:error, :self_loop}
+        {:error, {:self_loop, edge.from_node}}
 
       # Avoid duplicated edge
       MapSet.member?(graph.edges, edge) ->
