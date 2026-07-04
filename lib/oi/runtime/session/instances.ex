@@ -15,6 +15,14 @@ defmodule Oi.Runtime.Session.Instances do
     ]
 
     children =
+      if Code.ensure_loaded?(OrchidStratum) do
+        storage_opts = Keyword.get(opts, :storage_opts, [])
+        [{Oi.Runtime.Session.Storage, {oi_name, storage_opts}} | children]
+      else
+        children
+      end
+
+    children =
       if Code.ensure_loaded?(OrchidSymbiont.Runtime) do
         [
           {OrchidSymbiont.Runtime,

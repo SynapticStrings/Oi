@@ -73,10 +73,16 @@ defmodule Oi.Runtime.Session do
   def with_session(oi_name, opts \\ [], fun) when is_function(fun, 1) do
     {:ok, _pid} = ensure_started(oi_name, opts)
 
+    baggage =
+      case storage(oi_name) do
+        nil -> %{scope_id: oi_name}
+        stores -> Map.merge(%{scope_id: oi_name}, stores)
+      end
+
     session_opts = [
       executor: Oi.Executor.TaskSup,
       executor_opts: [sup: tasks_tuple(oi_name)],
-      orchid_baggage: %{scope_id: oi_name},
+      orchid_baggage: baggage,
       name: oi_name
     ]
 
@@ -92,4 +98,25 @@ defmodule Oi.Runtime.Session do
 
   @spec tasks_tuple(Oi.name()) :: Oi.Runtime.Registry.via_tuple()
   def tasks_tuple(oi), do: via(oi, :task_sup)
+
+  @doc """
+  Returns the per-session storage map if `orchid_stratum` is available.
+
+  The map can be merged into `orchid_baggage`:
+
+      %{meta_store: {EtsAdapter, ref}, blob_store: {EtsAdapter, ref}}
+
+  Returns `nil` when `orchid_stratum` is not loaded or the session
+  was started without storage.
+  """
+  @spec storage(Oi.name()) :: map() | nil
+  def storage(oi_name) do
+    if Code.ensure_loaded?(OrchidStratum.MetaStorage.EtsAdapter) do
+      Oi.Runtime.Session.Storage.get(oi_name)
+    end
+  end
+
+  @doc false
+  @spec storage_tuple(Oi.name()) :: Oi.Runtime.Registry.via_tuple()
+  def storage_tuple(oi), do: via(oi, :storage)
 end
