@@ -42,13 +42,11 @@ defmodule Oi do
 
   Two formats supported:
 
-  ```elixir
-  # Nested (recommended)
-  data: %{step1: %{in: "foo"}, step2: %{result: {:override, "bar"}}}
+      # Nested (recommended)
+      data: %{step1: %{in: "foo"}, step2: %{result: {:override, "bar"}}}
 
-  # Tuple keys
-  data: %{{:step1, :in} => "foo", {:step2, :result} => {:override, "bar"}}
-  ```
+      # Tuple keys
+      data: %{{:step1, :in} => "foo", {:step2, :result} => {:override, "bar"}}
 
   ### Pluggable Executor
 
