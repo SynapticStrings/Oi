@@ -4,8 +4,8 @@
 
 ### Breaking
 
-- `Oi.Executor` callback: `run/3` now returns `{:ok, [result()]} | {:error, term()}`
-  (was `[result()] | {:error, term()}`). Custom executor implementations must wrap
+- `Oi.Executor` callback: `run/3` now returns `{:ok, [result()]}` or `{:error, term()}`
+  (was `[result()]` or `{:error, term()}`). Custom executor implementations must wrap
   results in `{:ok, ...}`.
 - `Graph.add_edge/2` rejects self-loops with `{:error, {:self_loop, node_id}}`
   (was silently dropped). Duplicate edges are still silently dropped.
