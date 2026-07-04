@@ -77,7 +77,8 @@ defmodule Oi.Runtime.SessionSmokeTest do
         Session.with_session("ws-test", fn session ->
           {:ok, compiled} = Oi.compile(graph)
 
-          Oi.execute(compiled,
+          Oi.execute(
+            compiled,
             Keyword.merge(session, data: %{step1: %{in: "A"}, step2: %{in: "B"}})
           )
         end)
@@ -94,7 +95,9 @@ defmodule Oi.Runtime.SessionSmokeTest do
       run = fn ->
         Session.with_session("ws-idem", fn session ->
           {:ok, compiled} = Oi.compile(graph)
-          Oi.execute(compiled,
+
+          Oi.execute(
+            compiled,
             Keyword.merge(session, data: %{step1: %{in: "X"}, step2: %{in: "Y"}})
           )
         end)
@@ -212,7 +215,8 @@ defmodule Oi.Runtime.SessionSmokeTest do
           assert baggage[:scope_id] == "storage-ws"
 
           {:ok, _} =
-            Oi.execute(compiled,
+            Oi.execute(
+              compiled,
               Keyword.merge(session,
                 data: %{step1: %{in: "A"}, step2: %{in: "B"}},
                 orchid_adapters: [&Oi.Adapters.orchid_stratum/2]
@@ -221,7 +225,8 @@ defmodule Oi.Runtime.SessionSmokeTest do
 
           # Second call — same session, cached
           {:ok, _} =
-            Oi.execute(compiled,
+            Oi.execute(
+              compiled,
               Keyword.merge(session,
                 data: %{step1: %{in: "A"}, step2: %{in: "B"}},
                 orchid_adapters: [&Oi.Adapters.orchid_stratum/2]

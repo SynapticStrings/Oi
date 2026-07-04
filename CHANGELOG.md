@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.7.0 (2026-07-04)
+
+### Breaking
+
+- `Oi.Executor` callback: `run/3` now returns `{:ok, [result()]} | {:error, term()}`
+  (was `[result()] | {:error, term()}`). Custom executor implementations must wrap
+  results in `{:ok, ...}`.
+- `Graph.add_edge/2` rejects self-loops with `{:error, {:self_loop, node_id}}`
+  (was silently dropped). Duplicate edges are still silently dropped.
+- `Options.build_drafting_inputs/2` and `resolve_data/2` return
+  `{:ok, {memory, interventions}}` instead of bare `{memory, interventions}`.
+  Callers must match `{:ok, ...}`.
+
+### Added
+
+- `Session.with_session/3` — wraps executor + baggage boilerplate into a single call.
+- `Session.Storage` — per-session ETS-backed Meta/Blob stores. Started automatically
+  when `orchid_stratum` is available. Survives across `execute` calls within the session.
+  Supports `:storage_opts` for custom backends.
+- `Session.storage/1` — returns the session's storage map for manual baggage injection.
+- Telemetry events: `[:oi, :execute, :start/:stop]`, `[:oi, :stage, :start/:stop]`,
+  `[:oi, :worker, :start/:stop]`. Requires `:telemetry` (`>= 0.0.0`).
+- Error taxonomy documented in `Oi` module doc — grouped by phase (graph / dispatch / orchid).
+
+### Changed
+
+- `Oi.Adapters` uses `@compile {:no_warn_undefined, ...}` instead of `Module.concat/apply`
+  for optional-dep calls.
+- `:telemetry` added as direct dependency.
+
+### Removed
+
+- Dead stubs and Chinese TODO in `Oi.Runtime.Session`.
+
+
 ## v0.6.4 (2026-07-01)
 
 ### Changed
