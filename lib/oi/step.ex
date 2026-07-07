@@ -101,9 +101,7 @@ defmodule Oi.Step do
     end
   end
 
-  # ─────────────────────────────────────────────────────────
-  #  manifest/1
-  # ─────────────────────────────────────────────────────────
+  # ---- manifest/1 ----
 
   @doc """
   Declare step metadata. Must be called before `routine`.
@@ -128,9 +126,9 @@ defmodule Oi.Step do
     :ok
   end
 
-  # ─────────────────────────────────────────────────────────
-  #  routine — pure (arity 3) / symbiont (arity 4)
-  # ─────────────────────────────────────────────────────────
+  # ---- routine ----
+  # — pure step(input, opt, do_block)
+  # - symbiont step (input, models, opts, do_block)
 
   @doc """
   Define execution logic, expands to `run/2` (pure) or `run_with_model/3`
@@ -153,9 +151,7 @@ defmodule Oi.Step do
     build_routine(:run_with_model, [models_var], input, opts_var, body)
   end
 
-  # ─────────────────────────────────────────────────────────
-  #  ok / err
-  # ─────────────────────────────────────────────────────────
+  # ---- ok / err ----
 
   @doc "Wraps value as `{:ok, Param | [Param]}`."
   defmacro ok(value) do
@@ -181,9 +177,9 @@ defmodule Oi.Step do
   # Does not need compile-time info — plain function exported alongside ok.
   def err(reason), do: {:error, reason}
 
-  # ─────────────────────────────────────────────────────────
-  #  Private: step validation & codegen helpers
-  # ─────────────────────────────────────────────────────────
+  # ---- Private Functions ----
+
+  # step validation & codegen helpers
 
   defp validate_step!(nil, _type, _models) do
     raise "use Oi.Step requires :name option"
@@ -227,9 +223,8 @@ defmodule Oi.Step do
     end
   end
 
-  # ─────────────────────────────────────────────────────────
-  #  __before_compile__ : remaining callbacks + node spec
-  # ─────────────────────────────────────────────────────────
+  # ---- __before_compile__ ----
+  # remaining callbacks + node spec
 
   defmacro __before_compile__(env) do
     m = env.module
@@ -251,9 +246,7 @@ defmodule Oi.Step do
     end
   end
 
-  # ─────────────────────────────────────────────────────────
-  #  Private: codegen
-  # ─────────────────────────────────────────────────────────
+  # ---- codegen ----
 
   # fun       : target function name (:run / :run_with_model)
   # mid_args  : args between input Params and opts (symbiont's models_var)
@@ -323,9 +316,7 @@ defmodule Oi.Step do
     end
   end
 
-  # ─────────────────────────────────────────────────────────
-  #  Runtime helpers
-  # ─────────────────────────────────────────────────────────
+  # ---- Runtime helpers ----
 
   @doc false
   def unwrap_list(params) when is_list(params) do
