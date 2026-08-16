@@ -1,5 +1,7 @@
 # Oi
 
+[![zread](https://img.shields.io/badge/Ask-Zread-green)](https://zread.ai/SynapticStrings/Oi)
+
 > *Oi means Orchid integration.*
 
 Lightweight glue layer between
