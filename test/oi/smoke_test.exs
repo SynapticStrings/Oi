@@ -34,9 +34,11 @@ defmodule Oi.SmokeTest do
       # bundle_red contains step3
       assert bundle_red != nil
       assert :step3 in bundle_red.node_ids
+      assert bundle_red.cluster == :red
       # bundle_default contains step1, step2, step4
       assert bundle_default != nil
       assert :step1 in bundle_default.node_ids
+      assert bundle_default.cluster == :default_cluster
     end
 
     test "cycle detected returns error" do

@@ -16,6 +16,15 @@ defmodule Oi.Dispatch.Config do
     * `:concurrency`    — fallback for executor if `:executor_opts` has none (default: `System.schedulers_online()`)
     * `:timeout`        — fallback for executor if `:executor_opts` has none (default: `:infinity`)
     * `:name`           — optional scope name, merged into baggage as `:scope_id`
+    * `:checkpoint`     — optional function called before each stage; see "Checkpoint" below
+
+  ## Checkpoint
+
+  A checkpoint is a function `fn event, drafting -> :cont | :halt end` invoked by the
+  orchestrator before each stage runs. `event` is a map with `:stage_index`, `:stage_count`,
+  `:clusters` (cluster names of the stage's bundles) and `:node_ids`. The passed `drafting`'s
+  memory holds everything produced so far — inspect it, then return `:cont` to run the stage
+  or `:halt` to stop the whole dispatch with the current memory as a partial result.
   """
 
   alias Oi.Dispatch.{Drafting, Options}
@@ -31,6 +40,20 @@ defmodule Oi.Dispatch.Config do
   """
   @type data :: map()
 
+  @typedoc """
+  Event map passed to a `:checkpoint` function before a stage runs.
+  """
+  @type checkpoint_event :: %{
+          stage_index: non_neg_integer(),
+          stage_count: non_neg_integer(),
+          clusters: [Oi.Topology.Cluster.cluster_name()],
+          node_ids: [Oi.Topology.Graph.Node.id()]
+        }
+
+  @type checkpoint_action :: :cont | :halt
+
+  @type checkpoint :: (checkpoint_event(), Drafting.t() -> checkpoint_action())
+
   @type t :: %__MODULE__{
           executor: module(),
           executor_opts: keyword(),
@@ -43,7 +66,8 @@ defmodule Oi.Dispatch.Config do
           orchid_opts: keyword(),
           concurrency: pos_integer(),
           timeout: timeout(),
-          name: Oi.name() | nil
+          name: Oi.name() | nil,
+          checkpoint: checkpoint() | nil
         }
 
   defstruct executor: Oi.Executor.Sync,
@@ -53,7 +77,8 @@ defmodule Oi.Dispatch.Config do
             orchid_opts: [],
             concurrency: System.schedulers_online(),
             timeout: :infinity,
-            name: nil
+            name: nil,
+            checkpoint: nil
 
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
@@ -78,7 +103,8 @@ defmodule Oi.Dispatch.Config do
       orchid_baggage: opts |> Keyword.get(:orchid_baggage, []) |> Enum.into(%{}),
       orchid_opts: Keyword.get(opts, :orchid_opts, []),
       concurrency: concurrency,
-      timeout: timeout
+      timeout: timeout,
+      checkpoint: Keyword.get(opts, :checkpoint)
     }
   end
 

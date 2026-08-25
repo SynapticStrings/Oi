@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.8.0 (2026-08-25)
+
+### Added
+
+- `:checkpoint` option for `Oi.execute/2` — step-wise execution control. A function
+  `fn event, drafting -> :cont | :halt end` invoked by the Orchestrator before each
+  stage. The `event` map carries `:stage_index`, `:stage_count`, `:clusters` and
+  `:node_ids`; `drafting.memory` holds everything produced so far, so the callback can
+  inspect intermediate results (or ask the user) before deciding. Returning `:halt`
+  stops the dispatch early.
+- `Oi.Result` fields `status` (`:complete | :halted`) and `halted_at`. A halted run is a
+  normal outcome, not an error: `Oi.execute/2` still returns `{:ok, result}` with
+  `status == :halted` and `halted_at` set to the index of the stage that did not run.
+- `Oi.Compile.Bundle` field `cluster` — records the cluster name assigned at compile
+  time (previously discarded), enabling cluster-addressed checkpoints.
+- Telemetry: `[:oi, :execute, :stop]` metadata includes `halted: true` when a checkpoint
+  stopped the run.
+
+### Fixed
+
+- `Oi.Topology.GraphTest`: disjoint-type comparison warning from the Elixir 1.17 type
+  checker (`Map.from_struct(a) != Map.from_struct(b)` → `Map.equal?/2`).
+
+
 ## v0.7.0 (2026-07-04)
 
 ### Breaking

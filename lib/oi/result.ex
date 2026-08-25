@@ -3,18 +3,31 @@ defmodule Oi.Result do
   Execution result: the final drafting memory.
 
   `memory` is keyed by Orchid io_key, values are `Orchid.Param.t()`.
+
+  `status` is `:complete` when every stage ran, or `:halted` when a
+  `:checkpoint` function stopped the dispatch early — in that case
+  `halted_at` holds the index of the stage that was not executed and
+  `memory` holds everything produced up to that point.
   """
 
   alias Oi.Topology.Graph.PortRef
 
   @type t :: %__MODULE__{
-          memory: %{Orchid.Step.io_key() => Orchid.Param.t()}
+          memory: %{Orchid.Step.io_key() => Orchid.Param.t()},
+          status: :complete | :halted,
+          halted_at: non_neg_integer() | nil
         }
 
-  defstruct [:memory]
+  defstruct [:memory, status: :complete, halted_at: nil]
 
-  @spec new(%{Orchid.Step.io_key() => Orchid.Param.t()}) :: t()
-  def new(memory) when is_map(memory), do: %__MODULE__{memory: memory}
+  @spec new(%{Orchid.Step.io_key() => Orchid.Param.t()}, keyword()) :: t()
+  def new(memory, opts \\ []) when is_map(memory) do
+    %__MODULE__{
+      memory: memory,
+      status: Keyword.get(opts, :status, :complete),
+      halted_at: Keyword.get(opts, :halted_at)
+    }
+  end
 
   @spec fetch(t(), Orchid.Step.io_key()) :: {:ok, Orchid.Param.t()} | {:error, :not_found}
   def fetch(%__MODULE__{memory: mem}, key) do

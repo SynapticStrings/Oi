@@ -139,14 +139,32 @@ defmodule Oi do
 
   ## Other options
 
-    * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or custom module implementing `Oi.Executor`
-    * `:executor_opts` — passed to the executor (e.g. `[sup: MyTaskSup]`)
-    * `:orchid_adapters` — adapter pipeline; each is a 1-arity or 2-arity function over `{recipe, opts}`
-    * `:orchid_baggage` — merged into Orchid run baggage
-    * `:orchid_opts` — extra keyword opts forwarded to `Orchid.run/3`
-    * `:concurrency` — fallback for executor if `:executor_opts` has none (default: `System.schedulers_online()`)
-    * `:timeout` — fallback for executor (default: `:infinity`)
-    * `:name` — optional scope name, merged into baggage as `:scope_id`
+  * `:executor` — `Oi.Executor.Sync` (default), `Oi.Executor.TaskSup`, or custom module implementing `Oi.Executor`
+  * `:executor_opts` — passed to the executor (e.g. `[sup: MyTaskSup]`)
+  * `:orchid_adapters` — adapter pipeline; each is a 1-arity or 2-arity function over `{recipe, opts}`
+  * `:orchid_baggage` — merged into Orchid run baggage
+  * `:orchid_opts` — extra keyword opts forwarded to `Orchid.run/3`
+  * `:concurrency` — fallback for executor if `:executor_opts` has none (default: `System.schedulers_online()`)
+  * `:timeout` — fallback for executor (default: `:infinity`)
+  * `:name` — optional scope name, merged into baggage as `:scope_id`
+  * `:checkpoint` — optional function `fn event, drafting -> :cont | :halt end` called
+    before each stage. The drafting's memory holds everything produced so far; return
+    `:halt` to stop the dispatch early. A halted run still returns `{:ok, result}` with
+    `result.status == :halted` and `result.halted_at` set to the stage that did not run.
+
+  ## Examples
+
+      Oi.execute(compiled,
+        data: data,
+        checkpoint: fn event, drafting ->
+          if :llm in event.clusters do
+            IO.inspect(drafting.memory, label: "stage \#{event.stage_index}")
+            if IO.gets("continue? [y/n] ") |> String.trim() == "y", do: :cont, else: :halt
+          else
+            :cont
+          end
+        end
+      )
   """
   @spec execute(Compiled.t(), keyword()) :: {:ok, Result.t()} | {:error, term()}
   def execute(%Compiled{} = compiled, opts \\ []) do
@@ -158,18 +176,16 @@ defmodule Oi do
     :telemetry.execute([:oi, :execute, :start], %{system_time: System.system_time()}, metadata)
 
     with {:ok, drafting} <- Config.build_drafting(Keyword.get(opts, :data, %{}), compiled),
-         {:ok, final_drafting} <- Orchestrator.dispatch(compiled.plan, drafting, conf) do
-      result = {:ok, Result.new(final_drafting.memory)}
-
+         {:ok, result} <- dispatch_plan(compiled.plan, drafting, conf) do
       :telemetry.execute(
         [:oi, :execute, :stop],
         %{
           duration: System.monotonic_time() - start_time
         },
-        metadata
+        result_metadata(metadata, result)
       )
 
-      result
+      {:ok, result}
     else
       {:error, _} = err ->
         :telemetry.execute(
@@ -183,6 +199,22 @@ defmodule Oi do
         err
     end
   end
+
+  defp dispatch_plan(plan, drafting, conf) do
+    case Orchestrator.dispatch(plan, drafting, conf) do
+      {:ok, final_drafting} ->
+        {:ok, Result.new(final_drafting.memory)}
+
+      {:halted, partial_drafting, stage_index} ->
+        {:ok, Result.new(partial_drafting.memory, status: :halted, halted_at: stage_index)}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  defp result_metadata(metadata, %Result{status: :halted}), do: Map.put(metadata, :halted, true)
+  defp result_metadata(metadata, %Result{}), do: metadata
 
   @doc """
   All-in-one convenience: compile + execute in a single call.

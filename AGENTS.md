@@ -80,9 +80,9 @@ Oi.execute(compiled, opts)
 | **DSL** | `Oi.Step` | `use Oi.Step` — `manifest`, `routine`, `ok`, `err` macros |
 | **Topology** | `Oi.Topology.Graph` | Pure DAG: nodes, edges, topological sort |
 | **Topology** | `Oi.Topology.Cluster` | Node coloring for parallel/serial grouping |
-| **Compile** | `Oi.Compile.Bundle` | Graph → Orchid Recipes with boundary metadata |
+| **Compile** | `Oi.Compile.Bundle` | Graph → Orchid Recipes with boundary + cluster metadata |
 | **Compile** | `Oi.Compile.Planning` | Bundles → barrier-synced execution stages |
-| **Dispatch** | `Oi.Dispatch.Config` | Immutable config: executor, adapters, baggage, timeout |
+| **Dispatch** | `Oi.Dispatch.Config` | Immutable config: executor, adapters, baggage, timeout, checkpoint |
 | **Dispatch** | `Oi.Dispatch.Drafting` | Per-dispatch mutable state (memory + interventions) |
 | **Dispatch** | `Oi.Dispatch.Orchestrator` | Stage-by-stage barrier execution loop |
 | **Dispatch** | `Oi.Dispatch.Worker` | Single-bundle executor: resolve deps → adapters → Orchid.run |
@@ -93,7 +93,7 @@ Oi.execute(compiled, opts)
 | **Runtime** | `Oi.Runtime.Session` | Multi-tenant isolation via DynamicSupervisor + Registry |
 | **Runtime** | `Oi.Runtime.Registry` | Local Registry for session process lookup |
 | **Core** | `Oi.Compiled` | Static struct: bundles + plan + edges |
-| **Core** | `Oi.Result` | Execution result; `reify/2` extracts payloads |
+| **Core** | `Oi.Result` | Execution result; `reify/2` extracts payloads; `status`/`halted_at` mark halted runs |
 | **Adapters** | `Oi.Adapters` | Ready-to-use adapter functions for Orchid ecosystem |
 
 ## Code Patterns & Conventions
@@ -184,6 +184,32 @@ Oi.execute(compiled,
 ```
 
 `orchid_stratum` and `orchid_intervention_and_stratum` take 2 args (arity 2 — receive Config as second argument). The adapter pipeline in `Config.apply_orchid_adapters/2` handles both arities via pattern matching.
+
+### Checkpoint (Step-Wise Execution)
+
+Pass `:checkpoint` to `Oi.execute/2` — a `fn event, drafting -> :cont | :halt end` invoked by the Orchestrator **before each stage**:
+
+```elixir
+Oi.execute(compiled,
+  data: data,
+  checkpoint: fn event, drafting ->
+    if :llm in event.clusters do
+      IO.inspect(drafting.memory, label: "stage #{event.stage_index}/#{event.stage_count}")
+      if IO.gets("continue? [y/n] ") |> String.trim() == "y", do: :cont, else: :halt
+    else
+      :cont
+    end
+  end
+)
+```
+
+- `event` is a map: `:stage_index`, `:stage_count`, `:clusters`, `:node_ids`.
+- `drafting.memory` holds everything produced so far — this is the "current result" to inspect.
+- `:halt` stops the whole dispatch. It is a normal outcome, not an error: `Oi.execute` still
+  returns `{:ok, result}` with `result.status == :halted` and `result.halted_at` set to the
+  index of the stage that did not run.
+- Breakpoints are stage-granular (the barrier points). `Bundle.cluster` records the cluster
+  name from compile time so a checkpoint can filter by cluster, as above.
 
 ### Session / Multi-Tenancy
 

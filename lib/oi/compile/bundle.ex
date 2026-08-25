@@ -7,12 +7,13 @@ defmodule Oi.Compile.Bundle do
   Interventions are stored separately in `Oi.Dispatch.Drafting`.
   """
 
-  alias Oi.Topology.Graph
+  alias Oi.Topology.{Cluster, Graph}
 
   @type id :: String.t() | atom()
 
   @type t :: %__MODULE__{
           recipe: Orchid.Recipe.t(),
+          cluster: Cluster.cluster_name(),
           requires: [Orchid.Step.io_key()],
           exports: [Orchid.Step.io_key()],
           inputs: [Orchid.Step.io_key()],
@@ -21,13 +22,13 @@ defmodule Oi.Compile.Bundle do
 
   defstruct [
     :recipe,
+    :cluster,
     requires: [],
     exports: [],
     inputs: [],
     node_ids: []
   ]
 
-  alias Oi.Topology.{Cluster, Graph}
   alias Oi.Topology.Graph.PortRef
 
   @doc """
@@ -45,8 +46,8 @@ defmodule Oi.Compile.Bundle do
         sorted_node_ids
         |> Enum.group_by(&Map.get(node_colors, &1, :default_cluster))
         |> Enum.sort_by(fn {cluster_name, _} -> cluster_sort_key(cluster_name) end)
-        |> Enum.map(fn {_cluster_name, node_ids} ->
-          build_bundle(node_ids, graph)
+        |> Enum.map(fn {cluster_name, node_ids} ->
+          build_bundle(node_ids, graph, cluster_name)
         end)
 
       {:ok, bundles}
@@ -56,7 +57,7 @@ defmodule Oi.Compile.Bundle do
   defp cluster_sort_key(name) when is_list(name), do: Enum.sort(name)
   defp cluster_sort_key(name), do: name
 
-  defp build_bundle(node_ids, graph) do
+  defp build_bundle(node_ids, graph, cluster_name) do
     steps =
       node_ids
       |> Enum.map(&Map.fetch!(graph.nodes, &1))
@@ -67,6 +68,7 @@ defmodule Oi.Compile.Bundle do
 
     %__MODULE__{
       recipe: Orchid.Recipe.new(steps),
+      cluster: cluster_name,
       requires: requires,
       exports: exports,
       inputs: inputs,
