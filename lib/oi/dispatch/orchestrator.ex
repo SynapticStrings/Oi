@@ -9,13 +9,22 @@ defmodule Oi.Dispatch.Orchestrator do
   `Config.checkpoint_event()` and the current drafting. Returning `:halt`
   stops the dispatch; the memory accumulated so far is returned as a
   `{:halted, drafting, stage_index}` partial result.
+
+  When `conf.cancel_token` is set, it is checked before each stage (before
+  the checkpoint). A cancelled token stops the dispatch with the current
+  memory as a `{:cancelled, drafting, stage_index}` partial result —
+  cooperative, not preemptive: in-flight steps of the current stage run
+  to completion.
   """
 
   alias Oi.{Compile.Planning, Dispatch.Drafting}
   alias Oi.Dispatch.{Config, Worker}
 
   @spec dispatch(Planning.Plan.t(), Drafting.t(), Config.t()) ::
-          {:ok, Drafting.t()} | {:halted, Drafting.t(), non_neg_integer()} | {:error, term()}
+          {:ok, Drafting.t()}
+          | {:halted, Drafting.t(), non_neg_integer()}
+          | {:cancelled, Drafting.t(), non_neg_integer()}
+          | {:error, term()}
   def dispatch(%Planning.Plan{} = plan, %Drafting{} = drafting, %Config{} = conf) do
     stage_count = length(plan.stages)
 
@@ -24,7 +33,10 @@ defmodule Oi.Dispatch.Orchestrator do
         stage, {{:ok, current_drafting}, idx} ->
           stage_meta = %{stage_index: idx, stage_count: stage_count}
 
-          case checkpoint_decision(stage, current_drafting, conf, stage_meta) do
+          case stage_gate(stage, current_drafting, conf, stage_meta) do
+            :cancel ->
+              {{:cancelled, current_drafting, idx}, idx}
+
             :halt ->
               {{:halted, current_drafting, idx}, idx}
 
@@ -54,6 +66,15 @@ defmodule Oi.Dispatch.Orchestrator do
       {:error, _} = err ->
         :telemetry.execute([:oi, :stage, :stop], %{}, Map.put(stage_meta, :error, err))
         {err, idx}
+    end
+  end
+
+  # 取消优先于 checkpoint：token 已取消时该 stage 的 checkpoint 不再调用。
+  defp stage_gate(stage, drafting, %Config{cancel_token: token} = conf, stage_meta) do
+    if not is_nil(token) and Oi.CancelToken.cancelled?(token) do
+      :cancel
+    else
+      checkpoint_decision(stage, drafting, conf, stage_meta)
     end
   end
 

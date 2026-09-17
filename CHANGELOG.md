@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.9.0 (2026-09-17)
+
+### Added
+
+- `Oi.CancelToken` — cooperative cancellation token for `Oi.execute/2`.
+  Atomics-backed, process-free, shareable across processes; `new/0`,
+  `cancel/1` (idempotent), `cancelled?/1`.
+- `:cancel_token` option for `Oi.execute/2` — the Orchestrator checks the
+  token before each stage (same barrier points as `:checkpoint`). A cancelled
+  dispatch stops before the next stage and returns normally with
+  `result.status == :cancelled` and `halted_at` set to the stage that did not
+  run. Cancellation is cooperative, not preemptive: in-flight steps of the
+  current stage run to completion. Cancellation wins over `:checkpoint`: when
+  a token is cancelled, the checkpoint function for that stage is not called.
+- `Oi.Result` `status` gains `:cancelled` (was `:complete | :halted`).
+- Telemetry: `[:oi, :execute, :stop]` metadata includes `cancelled: true`
+  when a cancel token stopped the run.
+
 ## v0.8.0 (2026-08-25)
 
 ### Added

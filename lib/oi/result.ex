@@ -4,8 +4,9 @@ defmodule Oi.Result do
 
   `memory` is keyed by Orchid io_key, values are `Orchid.Param.t()`.
 
-  `status` is `:complete` when every stage ran, or `:halted` when a
-  `:checkpoint` function stopped the dispatch early — in that case
+  `status` is `:complete` when every stage ran, `:halted` when a
+  `:checkpoint` function stopped the dispatch early, or `:cancelled` when a
+  `:cancel_token` (`Oi.CancelToken`) was cancelled — in both cases
   `halted_at` holds the index of the stage that was not executed and
   `memory` holds everything produced up to that point.
   """
@@ -14,7 +15,7 @@ defmodule Oi.Result do
 
   @type t :: %__MODULE__{
           memory: %{Orchid.Step.io_key() => Orchid.Param.t()},
-          status: :complete | :halted,
+          status: :complete | :halted | :cancelled,
           halted_at: non_neg_integer() | nil
         }
 

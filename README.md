@@ -122,6 +122,29 @@ defmodule MyApp.Steps.Predict do
 end
 ```
 
+### Checkpoint and cancellation
+
+```elixir
+# Step-wise execution control: checkpoint before each stage
+Oi.execute(compiled,
+  data: data,
+  checkpoint: fn event, drafting -> :cont end # or :halt
+)
+
+# Cooperative cancellation from any process
+token = Oi.CancelToken.new()
+task = Task.async(fn -> Oi.execute(compiled, data: data, cancel_token: token) end)
+Oi.CancelToken.cancel(token)
+
+{:ok, result} = Task.await(task)
+result.status # :complete | :halted | :cancelled
+```
+
+Both stop the dispatch at stage barriers and keep everything produced so far
+in `result.memory` (`halted_at` = the stage that did not run). Cancellation is
+cooperative: in-flight steps run to completion.
+
 ## License
+
 
 MIT

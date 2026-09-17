@@ -93,7 +93,8 @@ Oi.execute(compiled, opts)
 | **Runtime** | `Oi.Runtime.Session` | Multi-tenant isolation via DynamicSupervisor + Registry |
 | **Runtime** | `Oi.Runtime.Registry` | Local Registry for session process lookup |
 | **Core** | `Oi.Compiled` | Static struct: bundles + plan + edges |
-| **Core** | `Oi.Result` | Execution result; `reify/2` extracts payloads; `status`/`halted_at` mark halted runs |
+| **Core** | `Oi.Result` | Execution result; `reify/2` extracts payloads; `status`/`halted_at` mark halted or cancelled runs |
+| **Core** | `Oi.CancelToken` | Atomics-backed cooperative cancellation token (`new/0`, `cancel/1`, `cancelled?/1`) |
 | **Adapters** | `Oi.Adapters` | Ready-to-use adapter functions for Orchid ecosystem |
 
 ## Code Patterns & Conventions
@@ -211,6 +212,32 @@ Oi.execute(compiled,
 - Breakpoints are stage-granular (the barrier points). `Bundle.cluster` records the cluster
   name from compile time so a checkpoint can filter by cluster, as above.
 
+### Cancellation (Cooperative)
+
+Pass `:cancel_token` to `Oi.execute/2` — an `Oi.CancelToken` checked by the Orchestrator
+**before each stage** (same barrier points as `:checkpoint`):
+
+```elixir
+token = Oi.CancelToken.new()
+task = Task.async(fn -> Oi.execute(compiled, data: data, cancel_token: token) end)
+
+# ...later, from any process:
+Oi.CancelToken.cancel(token)
+
+{:ok, result} = Task.await(task)
+result.status == :cancelled  # or :complete
+```
+
+- The token is atomics-backed: no process lifecycle, safe to share across processes.
+- Cancellation is **cooperative, not preemptive**: in-flight steps of the current stage
+  run to completion. Steps wanting finer granularity can receive the token (via `:data`
+  or step opts) and poll `Oi.CancelToken.cancelled?/1` between internal work units.
+- A cancelled dispatch is a normal outcome, not an error: `{:ok, result}` with
+  `result.status == :cancelled` and `result.halted_at` set to the stage that did not run.
+- Cancellation wins over `:checkpoint`: when a token is cancelled, the checkpoint
+  function for that stage is not called.
+- Telemetry: `[:oi, :execute, :stop]` metadata includes `cancelled: true`.
+
 ### Session / Multi-Tenancy
 
 ```elixir
@@ -282,6 +309,7 @@ Sessions are registered via `Oi.Runtime.Registry` (local Registry). `Session.ens
 lib/
   oi.ex                    # Facade: compile/2, execute/2, run/2
   oi/
+    cancel_token.ex        # Atomics-backed cooperative cancellation token
     step.ex                # Step DSL macros (use, manifest, routine, ok, err)
     flowgraph.ex           # Graph DSL macros (graph, step, ~>, many_step)
     compiled.ex            # Static compilation product struct

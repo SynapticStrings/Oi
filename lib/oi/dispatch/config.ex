@@ -16,7 +16,19 @@ defmodule Oi.Dispatch.Config do
     * `:concurrency`    — fallback for executor if `:executor_opts` has none (default: `System.schedulers_online()`)
     * `:timeout`        — fallback for executor if `:executor_opts` has none (default: `:infinity`)
     * `:name`           — optional scope name, merged into baggage as `:scope_id`
+    * `:cancel_token`   — optional `Oi.CancelToken` checked before each stage; see "Cancellation" below
     * `:checkpoint`     — optional function called before each stage; see "Checkpoint" below
+
+  ## Cancellation
+
+  Pass `cancel_token: Oi.CancelToken.new()` and call `Oi.CancelToken.cancel/1`
+  from any process to request cooperative cancellation. The token is checked
+  **before each stage** (same barrier points as `:checkpoint`); a cancelled
+  dispatch stops before the next stage and returns normally with
+  `result.status == :cancelled` and `result.halted_at` set to the stage that
+  did not run. In-flight steps run to completion — cancellation is
+  cooperative, not preemptive. Cancellation wins over `:checkpoint`: when a
+  token is cancelled, the checkpoint function for that stage is not called.
 
   ## Checkpoint
 
@@ -67,6 +79,7 @@ defmodule Oi.Dispatch.Config do
           concurrency: pos_integer(),
           timeout: timeout(),
           name: Oi.name() | nil,
+          cancel_token: Oi.CancelToken.t() | nil,
           checkpoint: checkpoint() | nil
         }
 
@@ -78,6 +91,7 @@ defmodule Oi.Dispatch.Config do
             concurrency: System.schedulers_online(),
             timeout: :infinity,
             name: nil,
+            cancel_token: nil,
             checkpoint: nil
 
   @spec new(keyword()) :: t()
@@ -104,6 +118,7 @@ defmodule Oi.Dispatch.Config do
       orchid_opts: Keyword.get(opts, :orchid_opts, []),
       concurrency: concurrency,
       timeout: timeout,
+      cancel_token: Keyword.get(opts, :cancel_token),
       checkpoint: Keyword.get(opts, :checkpoint)
     }
   end

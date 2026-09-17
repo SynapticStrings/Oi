@@ -1,7 +1,7 @@
 defmodule Oi.MixProject do
   use Mix.Project
 
-  @version "0.8.0"
+  @version "0.9.0"
 
   def project do
     [
@@ -12,41 +12,7 @@ defmodule Oi.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       package: package(),
-      docs: [
-        main: "readme",
-        extras: ["README.md", "CHANGELOG.md"],
-        groups_for_modules: [
-          Core: [Oi, Oi.Compiled, Oi.Result],
-          DSL: [Oi.Flowgraph, Oi.Step],
-          Compile: [
-            Oi.Compile.Bundle,
-            Oi.Compile.Planning,
-            Oi.Compile.Planning.Plan,
-            Oi.Compile.Planning.Stage
-          ],
-          Dispatch: [
-            Oi.Dispatch,
-            Oi.Dispatch.Config,
-            Oi.Dispatch.Drafting,
-            Oi.Dispatch.Orchestrator,
-            Oi.Dispatch.Worker
-          ],
-          Topology: [
-            Oi.Topology.Cluster,
-            Oi.Topology.Graph,
-            Oi.Topology.Graph.Node,
-            Oi.Topology.Graph.Edge,
-            Oi.Topology.Graph.PortRef
-          ],
-          Executors: [Oi.Executor, Oi.Executor.Sync, Oi.Executor.TaskSup],
-          Adapters: [Oi.Adapters],
-          Runtime: [
-            Oi.Runtime.Session,
-            Oi.Runtime.Session.Instances,
-            Oi.Runtime.Registry
-          ]
-        ]
-      ],
+      docs: docs(),
       description: "Lightweight Orchid integration layer with pluggable execution strategies",
       test_coverage: [
         ignore_modules: [
@@ -91,6 +57,44 @@ defmodule Oi.MixProject do
       links: %{"GitHub" => "https://github.com/SynapticStrings/Oi"},
       source_ref: @version,
       files: ~w(lib .formatter.exs mix.exs README.md CHANGELOG.md)
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: ["README.md", "CHANGELOG.md"],
+      groups_for_modules: [
+        Core: [Oi, Oi.Compiled, Oi.Result, Oi.CancelToken],
+        DSL: [Oi.Flowgraph, Oi.Step],
+        Compile: [
+          Oi.Compile.Bundle,
+          Oi.Compile.Planning,
+          Oi.Compile.Planning.Plan,
+          Oi.Compile.Planning.Stage
+        ],
+        Dispatch: [
+          Oi.Dispatch,
+          Oi.Dispatch.Config,
+          Oi.Dispatch.Drafting,
+          Oi.Dispatch.Orchestrator,
+          Oi.Dispatch.Worker
+        ],
+        Topology: [
+          Oi.Topology.Cluster,
+          Oi.Topology.Graph,
+          Oi.Topology.Graph.Node,
+          Oi.Topology.Graph.Edge,
+          Oi.Topology.Graph.PortRef
+        ],
+        Executors: [Oi.Executor, Oi.Executor.Sync, Oi.Executor.TaskSup],
+        Adapters: [Oi.Adapters],
+        Runtime: [
+          Oi.Runtime.Session,
+          Oi.Runtime.Session.Instances,
+          Oi.Runtime.Registry
+        ]
+      ]
     ]
   end
 end

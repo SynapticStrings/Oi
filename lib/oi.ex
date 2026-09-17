@@ -147,6 +147,11 @@ defmodule Oi do
   * `:concurrency` — fallback for executor if `:executor_opts` has none (default: `System.schedulers_online()`)
   * `:timeout` — fallback for executor (default: `:infinity`)
   * `:name` — optional scope name, merged into baggage as `:scope_id`
+  * `:cancel_token` — optional `Oi.CancelToken` for cooperative cancellation. The token is checked
+    before each stage; a cancelled dispatch stops before the next stage and returns `{:ok, result}`
+    with `result.status == :cancelled` and `result.halted_at` set to the stage that did not run.
+    In-flight steps run to completion (cooperative, not preemptive). When a token is cancelled,
+    the `:checkpoint` function for that stage is not called.
   * `:checkpoint` — optional function `fn event, drafting -> :cont | :halt end` called
     before each stage. The drafting's memory holds everything produced so far; return
     `:halt` to stop the dispatch early. A halted run still returns `{:ok, result}` with
@@ -208,12 +213,19 @@ defmodule Oi do
       {:halted, partial_drafting, stage_index} ->
         {:ok, Result.new(partial_drafting.memory, status: :halted, halted_at: stage_index)}
 
+      {:cancelled, partial_drafting, stage_index} ->
+        {:ok, Result.new(partial_drafting.memory, status: :cancelled, halted_at: stage_index)}
+
       {:error, _} = err ->
         err
     end
   end
 
   defp result_metadata(metadata, %Result{status: :halted}), do: Map.put(metadata, :halted, true)
+
+  defp result_metadata(metadata, %Result{status: :cancelled}),
+    do: Map.put(metadata, :cancelled, true)
+
   defp result_metadata(metadata, %Result{}), do: metadata
 
   @doc """
